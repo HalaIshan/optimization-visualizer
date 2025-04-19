@@ -9,16 +9,21 @@ vd.settings.default_backend= 'vtk'
 
 #%% Callbacks
 msg = vd.Text2D(pos='bottom-left', font="VictorMono") # an empty text
+global mouse_down
+mouse_down = False
 
 def OnMouseMove(evt):                ### called every time mouse moves!
-    global Xi
+    global Xi, mouse_down
+
 
     if evt.object is None:          # mouse hits nothing, return.
         return                       
 
     pt  = evt.picked3d               # 3d coords of point under mouse
     X   = np.array([pt[0],pt[1],objective([pt[0],pt[1]])])  # X = (x,y,e(x,y))
-    Xi = np.append(Xi,[X],axis=0)             # append to the list of points
+    if not mouse_down:                  # ignore mouse moves when mouse is down
+         Xi = np.append(Xi,[X],axis=0)             # append to the list of points
+
     if len(Xi) > 1:               # need at least two points to compute a distance
         txt =(
             f"X:  {vd.precision(X,2)}\n"
@@ -33,6 +38,7 @@ def OnMouseMove(evt):                ### called every time mouse moves!
 
     c = vd.Cylinder([np.append(Xi[-1,0:2], 0.0), Xi[-1,:]], r=0.01, c='orange5')
     plt.remove("Cylinder")    
+    
     fp = fplt3d[0].flagpole(txt, point=X,s=0.08, c='k', font="Quikhand")
     fp.follow_camera()                 # make it always face the camera
     plt.remove("FlagPole") # remove the old flagpole
@@ -44,11 +50,47 @@ def OnKeyPress(evt):               ### called every time a key is pressed
     if evt.keypress in ['c', 'C']: # reset Xi and the arrows
         Xi = np.empty((0, 3))
         plt.remove("Arrow").render()
+        plt.remove("RightClickMarker")
+        plt.remove("RightClickLabel")
 
 def OnSliderAlpha(widget, event): ### called every time the slider is moved
     val = widget.value         # get the slider value
     fplt3d[0].alpha(val)       # set the alpha (transparency) value of the surface
     fplt3d[1].alpha(val)       # set the alpha (transparency) value of the isolines
+
+def OnMousePress(evt):
+    global mouse_down
+    mouse_down = True
+
+    pt = evt.picked3d
+    if pt is None:
+        return
+
+    pt = np.array(pt)
+
+    sphere = vd.Sphere(pos=pt, r=0.02, c='red')
+    sphere.name = "RightClickMarker"
+    
+    # Clean coordinate label (small and above the sphere)
+    text_pos = pt + np.array([0.0, 0.0, 0.5])  # move only upward (Z)
+    label = vd.Text3D(
+        f"{vd.precision(pt, 2)}",
+        pos=text_pos,
+        s=0.04,             # smaller font
+        c='black',
+        justify='center'
+    )
+    label.name="RightClickLabel"
+    label.lighting('off')  # make sure it's always visible
+
+
+    plt.add(sphere, label)
+    plt.render()
+
+    mouse_down = False  # Reset immediately after
+
+
+
 
 
 #%% Optimization functions
@@ -115,6 +157,7 @@ fplt2d[1].vertices[:,2] = 0        # set the z-coordinate of the isolines to 0
 
 plt.add_callback('mouse move', OnMouseMove) # add Mouse move callback
 plt.add_callback('key press', OnKeyPress) # add Keyboard callback
+plt.add_callback("right button press", OnMousePress)
 plt.add_slider(OnSliderAlpha,0.,1.,1., title="Alpha") # add a slider for the alpha value of the surface
 plt.show([fplt3d, fplt2d], msg, __doc__, viewup='z')
 plt.close()
