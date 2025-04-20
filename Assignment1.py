@@ -4,50 +4,69 @@ import numpy as np
 from vedo.pyplot import plot
 from vedo import Latex
 
-vd.settings.default_backend= 'vtk'
+vd.settings.default_backend = 'vtk'
+
+#%% Function Selection
+def wavy_sine_cosine(X):
+    x, y = X[0], X[1]
+    return np.sin(2 * x * y) * np.cos(3 * y) / 2 + 0.5
+
+def ripple_pattern(X):
+    x, y = X[0], X[1]
+    return np.cos(x) * np.sin(y) + 0.5
+
+def gaussian_hill(X):
+    x, y = X[0], X[1]
+    return np.exp(-x**2 - y**2)
+
+current_function = wavy_sine_cosine  # default function
+
+def objective(X):
+    return current_function(X)
 
 #%% Callbacks
-msg = vd.Text2D(pos='bottom-left', font="VictorMono") # an empty text
-global mouse_down
+msg = vd.Text2D(pos='bottom-left', font="VictorMono")
+global mouse_down, fplt3d, fplt2d
 mouse_down = False
 
-def OnMouseMove(evt):                ### called every time mouse moves!
-    global Xi, mouse_down, energy_plot
+def OnMouseMove(evt):
+    global Xi, mouse_down, energy_plot, fplt3d
 
-    if evt.object is None:          # mouse hits nothing, return.
-        return                       
+    if evt.object is None:
+        return
 
-    pt  = evt.picked3d               # 3d coords of point under mouse
-    X   = np.array([pt[0],pt[1],objective([pt[0],pt[1]])])  # X = (x,y,e(x,y))
-    if not mouse_down:                  # ignore mouse moves when mouse is down
-         Xi = np.append(Xi,[X],axis=0)             # append to the list of points
+    pt = evt.picked3d
+    X = np.array([pt[0], pt[1], objective([pt[0], pt[1]])])
+    if not mouse_down:
+        Xi = np.append(Xi, [X], axis=0)
 
-    if len(Xi) > 1:               # need at least two points to compute a distance
-        txt =(
+    if len(Xi) > 1:
+        txt = (
             f"X:  {vd.precision(X,2)}\n"
             f"dX: {vd.precision(Xi[-1,0:2] - Xi[-2,0:2],2)}\n"
             f"dE: {vd.precision(Xi[-1,2] - Xi[-2,2],2)}\n"
         )
         ar = vd.Arrow(Xi[-2,:], Xi[-1,:], s=0.001, c='orange5')
-        plt.add(ar) # add the arrow
+        plt.add(ar)
     else:
         txt = f"X: {vd.precision(X,2)}"
-    msg.text(txt)                    # update text message
+    msg.text(txt)
 
     c = vd.Cylinder([np.append(Xi[-1,0:2], 0.0), Xi[-1,:]], r=0.01, c='orange5')
-    plt.remove("Cylinder")    
-    
-    fp = fplt3d[0].flagpole(txt, point=X,s=0.08, c='k', font="Quikhand")
-    fp.follow_camera()                 # make it always face the camera
-    plt.remove("FlagPole") # remove the old flagpole
+    plt.remove("Cylinder")
 
-    plt.add(fp, c) # add the new flagpole and new cylinder
-    update_energy_plot()   # 👈 Add this line
-    plt.render()   # re-render the scene
+    fp = fplt3d[0].flagpole(txt, point=X, s=0.08, c='k', font="Quikhand")
+    fp.follow_camera()
+    plt.remove("FlagPole")
 
-def OnKeyPress(evt):               ### called every time a key is pressed
-    global Xi, energy_plot
-    if evt.keypress in ['c', 'C']: # reset Xi and the arrows
+    plt.add(fp, c)
+    update_energy_plot()
+    plt.render()
+
+def OnKeyPress(evt):
+    global Xi, energy_plot, current_function
+
+    if evt.keypress in ['c', 'C','1','2','3']:
         Xi = np.empty((0, 3))
         plt.remove("Arrow")
         plt.remove("RightClickMarker")
@@ -55,12 +74,41 @@ def OnKeyPress(evt):               ### called every time a key is pressed
         if energy_plot:
             plt.remove(energy_plot)
             energy_plot = None
-        plt.render()  
+        plt.render()
 
-def OnSliderAlpha(widget, event): ### called every time the slider is moved
-    val = widget.value         # get the slider value
-    fplt3d[0].alpha(val)       # set the alpha (transparency) value of the surface
-    fplt3d[1].alpha(val)       # set the alpha (transparency) value of the isolines
+    if evt.keypress == '1':
+        current_function = wavy_sine_cosine
+        reset_surface_plot()
+    if evt.keypress == '2':
+        current_function = ripple_pattern
+        reset_surface_plot()
+    if evt.keypress == '3':
+        current_function = gaussian_hill
+        reset_surface_plot()
+
+def reset_surface_plot():
+    global fplt3d, fplt2d, Xi, energy_plot
+
+    Xi = np.empty((0, 3))
+    if energy_plot:
+        plt.remove(energy_plot)
+        energy_plot = None
+    plt.remove(fplt3d)
+    plt.remove(fplt2d)
+
+    fplt3d = plot(lambda x, y: objective([x, y]), c='terrain')
+    fplt2d = fplt3d.clone()
+    fplt2d[0].lighting('off')
+    fplt2d[0].vertices[:, 2] = 0
+    fplt2d[1].vertices[:, 2] = 0
+    plt.add(fplt3d, fplt2d)
+    plt.render()
+
+def OnSliderAlpha(widget, event):
+    global fplt3d
+    val = widget.value
+    fplt3d[0].alpha(val)
+    fplt3d[1].alpha(val)
 
 def OnMousePress(evt):
     global mouse_down
@@ -74,52 +122,46 @@ def OnMousePress(evt):
 
     sphere = vd.Sphere(pos=pt, r=0.02, c='red')
     sphere.name = "RightClickMarker"
-    
-    # Clean coordinate label (small and above the sphere)
-    text_pos = pt + np.array([0.0, 0.0, 0.5])  # move only upward (Z)
+
+    text_pos = pt + np.array([0.0, 0.0, 0.5])
     label = vd.Text3D(
         f"{vd.precision(pt, 2)}",
         pos=text_pos,
-        s=0.04,             # smaller font
+        s=0.04,
         c='black',
         justify='center'
     )
-    label.name="RightClickLabel"
-    label.lighting('off')  # make sure it's always visible
+    label.name = "RightClickLabel"
+    label.lighting('off')
 
     plt.add(sphere, label)
     plt.render()
+    mouse_down = False
 
-    mouse_down = False  # Reset immediately after
-
-  
 def update_energy_plot():
-    global energy_plot, plt
+    global energy_plot, plt, Xi
 
     if Xi.shape[0] < 2:
         return
 
-    # Extract step indices and energy values
     steps = np.arange(len(Xi))
     energies = Xi[:, 2]
 
-    # Remove old plot if it exists
     if energy_plot:
         plt.remove(energy_plot)
 
-    # Create and clone the 2D energy plot
     new_plot = plot(steps, energies, lc='blue', title='Energy along path')
-    energy_plot = new_plot.clone2d( pos='top-left', size=0.8)
+    energy_plot = new_plot.clone2d(pos='top-left', size=0.8)
     plt.add(energy_plot)
 
 #%% Optimization functions
-def gradient_fd(func, X, h=0.001): # finite difference gradient
+def gradient_fd(func, X, h=0.001):
     x, y = X[0], X[1]
     gx = (func([x+h, y]) - func([x-h, y])) / (2*h)
     gy = (func([x, y+h]) - func([x, y-h])) / (2*h)
     return gx, gy
 
-def Hessian_fd(func, X, h=0.001): # finite difference Hessian
+def Hessian_fd(func, X, h=0.001):
     x, y = X[0], X[1]
     gxx = (func([x+h, y]) - 2*func([x, y]) + func([x-h, y])) / h**2
     gyy = (func([x, y+h]) - 2*func([x, y]) + func([x, y-h])) / h**2
@@ -127,24 +169,23 @@ def Hessian_fd(func, X, h=0.001): # finite difference Hessian
     H = np.array([[gxx, gxy], [gxy, gyy]])
     return H
 
-def gradient_descent(func, X): # compute gradient step direction
+def gradient_descent(func, X):
     g = gradient_fd(func, X)
     return -np.array(g)
 
-def Newton(func, X):   # compute Newton step direction
+def Newton(func, X):
     g = gradient_fd(func, X)
     H = Hessian_fd(func, X)
     d = -np.linalg.solve(H, np.array(g))
-    return np.array(d[0],d[1])
+    return np.array([d[0], d[1]])
 
-def line_search(func, X, d, alpha=1.0): 
-    # todo: implement line search
+def line_search(func, X, d, alpha=1.0):
     return alpha
 
 def step(func, X, search_direction_function):
     d = search_direction_function(func, X)
     alpha = line_search(func, X, d)
-    return X + d*alpha
+    return X + d * alpha
 
 def optimize(func, X, search_direction_function, tol=1e-6, iter_max=10):
     for i in range(iter_max):
@@ -153,29 +194,23 @@ def optimize(func, X, search_direction_function, tol=1e-6, iter_max=10):
             break
     return X
 
-#%% Plotting
-
-def objective(X):
-    x, y = X[0], X[1]
-    return np.sin(2*x*y) * np.cos(3*y)/2+1/2
-
+#%% Main Plotting
 Xi = np.empty((0, 3))
 energy_plot = None
-# test the optimization functions
 X = optimize(objective, [0.6, 0.6], Newton, tol=1e-6, iter_max=100)
 
-plt = vd.Plotter(bg2='lightblue', size=(1600, 900))  # Create the plotter
-fplt3d = plot(lambda x,y: objective([x,y]), c='terrain')      # create a plot from the function e. fplt3d is a list containing surface mesh, isolines, and axis
-fplt2d = fplt3d.clone()            # clone the plot to create a 2D plot
+plt = vd.Plotter(bg2='lightblue', size=(1600, 900))
+fplt3d = plot(lambda x, y: objective([x, y]), c='terrain')
+fplt2d = fplt3d.clone()
+fplt2d[0].lighting('off')
+fplt2d[0].vertices[:, 2] = 0
+fplt2d[1].vertices[:, 2] = 0
 
-fplt2d[0].lighting('off')          # turn off lighting for the 2D plot
-fplt2d[0].vertices[:,2] = 0        # set the z-coordinate of the mesh to 0
-fplt2d[1].vertices[:,2] = 0        # set the z-coordinate of the isolines to 0
-
-plt.add_callback('mouse move', OnMouseMove) # add Mouse move callback
-plt.add_callback('key press', OnKeyPress) # add Keyboard callback
+plt.add_callback('mouse move', OnMouseMove)
+plt.add_callback('key press', OnKeyPress)
 plt.add_callback("right button press", OnMousePress)
-plt.add_slider(OnSliderAlpha,0.,1.,1., title="Alpha") # add a slider for the alpha value of the surface
+plt.add_slider(OnSliderAlpha, 0., 1., 1., title="Alpha")
+
 plt.show([fplt3d, fplt2d], msg, __doc__, viewup='z')
 plt.close()
 # %%

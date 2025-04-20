@@ -108,3 +108,38 @@ Below is the improved result using clone2d():
 
 [▶ Or embed a video if needed:](videos/task1.2_demo.mkv)
 
+---
+
+Task 1.3 – Changing the Objective Function via the GUI
+🎯 Goal
+Allow the user to switch between different objective functions dynamically using the GUI.
+
+✅ Implementation Summary
+I extended the interactive system by allowing function switching using keyboard keys:
+
+Press 1 to view the Wavy Sine-Cosine function (default).
+![GUI Interaction](images/task_1.3_image1.png)
+Press 2 to view the Ripple Pattern.
+![GUI Interaction](images/task_1.3_image2.png)
+Press 3 to view the Gaussian Hill.
+![GUI Interaction](images/task_1.3_image3.png)
+
+This interaction is handled in the OnKeyPress callback:
+When the user presses 1, 2, or 3, the global variable current_function is updated accordingly.
+Then, the helper function reset_surface_plot() is called to:
+Clear the existing plot (fplt3d and fplt2d)
+Clear the energy graph if present
+Reset the user-drawn path
+Re-render the surface using the new function.
+
+✨ Why This Approach?
+Instead of using GUI widgets like buttons (which aren't fully supported in vedo's current version), I implemented keyboard-based control. This method is:
+
+Intuitive: Simple key presses control function changes
+Effective: Clears the path and energy plot automatically
+Clean: Keeps the interface visually minimal
+
+🧪 Challenges
+I initially attempted to use add_button_radio() from vedo, but this method wasn’t available in the current version. As a fallback, I used key bindings, which ended up working more smoothly for our use case.
+[▶ vedio1:](videos/task1.3_demo1.mkv)
+
