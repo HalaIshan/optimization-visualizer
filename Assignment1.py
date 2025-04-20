@@ -4,7 +4,6 @@ import numpy as np
 from vedo.pyplot import plot
 from vedo import Latex
 
-
 vd.settings.default_backend= 'vtk'
 
 #%% Callbacks
@@ -13,8 +12,7 @@ global mouse_down
 mouse_down = False
 
 def OnMouseMove(evt):                ### called every time mouse moves!
-    global Xi, mouse_down
-
+    global Xi, mouse_down, energy_plot
 
     if evt.object is None:          # mouse hits nothing, return.
         return                       
@@ -44,14 +42,20 @@ def OnMouseMove(evt):                ### called every time mouse moves!
     plt.remove("FlagPole") # remove the old flagpole
 
     plt.add(fp, c) # add the new flagpole and new cylinder
+    update_energy_plot()   # 👈 Add this line
     plt.render()   # re-render the scene
 
 def OnKeyPress(evt):               ### called every time a key is pressed
+    global Xi, energy_plot
     if evt.keypress in ['c', 'C']: # reset Xi and the arrows
         Xi = np.empty((0, 3))
-        plt.remove("Arrow").render()
+        plt.remove("Arrow")
         plt.remove("RightClickMarker")
         plt.remove("RightClickLabel")
+        if energy_plot:
+            plt.remove(energy_plot)
+            energy_plot = None
+        plt.render()  
 
 def OnSliderAlpha(widget, event): ### called every time the slider is moved
     val = widget.value         # get the slider value
@@ -83,15 +87,30 @@ def OnMousePress(evt):
     label.name="RightClickLabel"
     label.lighting('off')  # make sure it's always visible
 
-
     plt.add(sphere, label)
     plt.render()
 
     mouse_down = False  # Reset immediately after
 
+  
+def update_energy_plot():
+    global energy_plot, plt
 
+    if Xi.shape[0] < 2:
+        return
 
+    # Extract step indices and energy values
+    steps = np.arange(len(Xi))
+    energies = Xi[:, 2]
 
+    # Remove old plot if it exists
+    if energy_plot:
+        plt.remove(energy_plot)
+
+    # Create and clone the 2D energy plot
+    new_plot = plot(steps, energies, lc='blue', title='Energy along path')
+    energy_plot = new_plot.clone2d( pos='top-left', size=0.8)
+    plt.add(energy_plot)
 
 #%% Optimization functions
 def gradient_fd(func, X, h=0.001): # finite difference gradient
@@ -134,7 +153,6 @@ def optimize(func, X, search_direction_function, tol=1e-6, iter_max=10):
             break
     return X
 
-
 #%% Plotting
 
 def objective(X):
@@ -142,18 +160,17 @@ def objective(X):
     return np.sin(2*x*y) * np.cos(3*y)/2+1/2
 
 Xi = np.empty((0, 3))
+energy_plot = None
 # test the optimization functions
 X = optimize(objective, [0.6, 0.6], Newton, tol=1e-6, iter_max=100)
 
-plt = vd.Plotter(bg2='lightblue')  # Create the plotter
+plt = vd.Plotter(bg2='lightblue', size=(1600, 900))  # Create the plotter
 fplt3d = plot(lambda x,y: objective([x,y]), c='terrain')      # create a plot from the function e. fplt3d is a list containing surface mesh, isolines, and axis
 fplt2d = fplt3d.clone()            # clone the plot to create a 2D plot
-
 
 fplt2d[0].lighting('off')          # turn off lighting for the 2D plot
 fplt2d[0].vertices[:,2] = 0        # set the z-coordinate of the mesh to 0
 fplt2d[1].vertices[:,2] = 0        # set the z-coordinate of the isolines to 0
-
 
 plt.add_callback('mouse move', OnMouseMove) # add Mouse move callback
 plt.add_callback('key press', OnKeyPress) # add Keyboard callback
