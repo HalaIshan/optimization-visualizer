@@ -143,3 +143,8 @@ Clean: Keeps the interface visually minimal
 I initially attempted to use add_button_radio() from vedo, but this method wasn’t available in the current version. As a fallback, I used key bindings, which ended up working more smoothly for our use case.
 [▶ vedio1:](videos/task1.3_demo1.mkv)
 
+
+Task 2.1 – Gradient Descent Interaction
+In this task, the goal was to disable mouse-based path creation and prepare the environment for interactive gradient descent. Instead of deleting the existing path-related code, I introduced a global toggle variable enable_mouse_path and updated the OnMouseMove callback to respect it. By setting enable_mouse_path = False, the mouse still shows coordinates and updates text and flag visuals, but no longer appends to the path Xi. This approach preserves the infrastructure for plotting the optimization path later, as required for Task 2.2.
+
+[▶ Watch Task 2.1 Video:](videos/task2.1_demo.mkv)
