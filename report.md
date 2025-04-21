@@ -148,3 +148,8 @@ Task 2.1 – Gradient Descent Interaction
 In this task, the goal was to disable mouse-based path creation and prepare the environment for interactive gradient descent. Instead of deleting the existing path-related code, I introduced a global toggle variable enable_mouse_path and updated the OnMouseMove callback to respect it. By setting enable_mouse_path = False, the mouse still shows coordinates and updates text and flag visuals, but no longer appends to the path Xi. This approach preserves the infrastructure for plotting the optimization path later, as required for Task 2.2.
 
 [▶ Watch Task 2.1 Video:](videos/task2.1_demo.mkv)
+
+that what i did at task 2.1 at first but after i contiue i noticed that accidently i hidden the labels de and dx which should not happen so i redo it again but this time due to wanting to finish quickly i used another shorter and simplier way which is hidden the two lines of code that are responsible of creating the path as the mouse move 
+
+[▶ Watch Task 2.1 Video:](videos/task2.1_demo2.mkv)
+

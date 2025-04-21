@@ -26,9 +26,8 @@ def objective(X):
 
 #%% Callbacks
 msg = vd.Text2D(pos='bottom-left', font="VictorMono")
-global mouse_down, fplt3d, fplt2d, enable_mouse_path
+global mouse_down, fplt3d, fplt2d
 mouse_down = False
-enable_mouse_path = False
 
 def OnMouseMove(evt):
     global Xi, mouse_down, energy_plot, fplt3d
@@ -38,10 +37,15 @@ def OnMouseMove(evt):
 
     pt = evt.picked3d
     X = np.array([pt[0], pt[1], objective([pt[0], pt[1]])])
-    if not mouse_down and enable_mouse_path:
-        Xi = np.append(Xi, [X], axis=0)
 
-    if Xi.shape[0] > 1:
+    # COMMENTED OUT for Task 2.1
+    # if not mouse_down:
+    #     Xi = np.append(Xi, [X], axis=0)
+
+    txt = f"X: {vd.precision(X, 2)}"
+    msg.text(txt)
+
+    if Xi.shape[0] >= 2:
         txt = (
             f"X:  {vd.precision(X,2)}\n"
             f"dX: {vd.precision(Xi[-1,0:2] - Xi[-2,0:2],2)}\n"
@@ -49,11 +53,7 @@ def OnMouseMove(evt):
         )
         ar = vd.Arrow(Xi[-2,:], Xi[-1,:], s=0.001, c='orange5')
         plt.add(ar)
-    else:
-        txt = f"X: {vd.precision(X,2)}"
-    msg.text(txt)
 
-    if Xi.shape[0] > 0:
         c = vd.Cylinder([np.append(Xi[-1,0:2], 0.0), Xi[-1,:]], r=0.01, c='orange5')
         plt.remove("Cylinder")
         plt.add(c)
@@ -61,10 +61,11 @@ def OnMouseMove(evt):
     fp = fplt3d[0].flagpole(txt, point=X, s=0.08, c='k', font="Quikhand")
     fp.follow_camera()
     plt.remove("FlagPole")
-
     plt.add(fp)
+
     update_energy_plot()
     plt.render()
+
 
 def OnKeyPress(evt):
     global Xi, energy_plot, current_function
