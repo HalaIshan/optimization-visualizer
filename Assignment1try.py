@@ -26,8 +26,9 @@ def objective(X):
 
 #%% Callbacks
 msg = vd.Text2D(pos='bottom-left', font="VictorMono")
-global mouse_down, fplt3d, fplt2d
+global mouse_down, fplt3d, fplt2d, enable_mouse_path
 mouse_down = False
+enable_mouse_path = False
 
 def OnMouseMove(evt):
     global Xi, mouse_down, energy_plot, fplt3d
@@ -37,15 +38,10 @@ def OnMouseMove(evt):
 
     pt = evt.picked3d
     X = np.array([pt[0], pt[1], objective([pt[0], pt[1]])])
+    if not mouse_down and enable_mouse_path:
+        Xi = np.append(Xi, [X], axis=0)
 
-    # COMMENTED OUT for Task 2.1
-    # if not mouse_down:
-    #     Xi = np.append(Xi, [X], axis=0)
-
-    txt = f"X: {vd.precision(X, 2)}"
-    msg.text(txt)
-
-    if Xi.shape[0] >= 2:
+    if Xi.shape[0] > 1:
         txt = (
             f"X:  {vd.precision(X,2)}\n"
             f"dX: {vd.precision(Xi[-1,0:2] - Xi[-2,0:2],2)}\n"
@@ -53,7 +49,11 @@ def OnMouseMove(evt):
         )
         ar = vd.Arrow(Xi[-2,:], Xi[-1,:], s=0.001, c='orange5')
         plt.add(ar)
+    else:
+        txt = f"X: {vd.precision(X,2)}"
+    msg.text(txt)
 
+    if Xi.shape[0] > 0:
         c = vd.Cylinder([np.append(Xi[-1,0:2], 0.0), Xi[-1,:]], r=0.01, c='orange5')
         plt.remove("Cylinder")
         plt.add(c)
@@ -61,11 +61,10 @@ def OnMouseMove(evt):
     fp = fplt3d[0].flagpole(txt, point=X, s=0.08, c='k', font="Quikhand")
     fp.follow_camera()
     plt.remove("FlagPole")
-    plt.add(fp)
 
+    plt.add(fp)
     update_energy_plot()
     plt.render()
-
 
 def OnKeyPress(evt):
     global Xi, energy_plot, current_function
@@ -75,6 +74,8 @@ def OnKeyPress(evt):
         plt.remove("Arrow")
         plt.remove("RightClickMarker")
         plt.remove("RightClickLabel")
+        plt.remove("LeftClickMarker")
+        plt.remove("LeftClickLabel")
         if energy_plot:
             plt.remove(energy_plot)
             energy_plot = None
@@ -114,7 +115,7 @@ def OnSliderAlpha(widget, event):
     fplt3d[0].alpha(val)
     fplt3d[1].alpha(val)
 
-def OnMousePress(evt):
+def OnMouseRightPress(evt):
     global mouse_down
     mouse_down = True
 
@@ -136,6 +137,38 @@ def OnMousePress(evt):
         justify='center'
     )
     label.name = "RightClickLabel"
+    label.lighting('off')
+
+    plt.add(sphere, label)
+    plt.render()
+    mouse_down = False
+
+
+def OnMouseLeftPress(evt):
+    global mouse_down
+    mouse_down = True
+
+    pt = evt.picked3d
+    if pt is None:
+        return
+    
+    plt.remove("LeftClickMarker")
+    plt.remove("LeftClickLabel")
+
+    pt = np.array(pt)
+
+    sphere = vd.Sphere(pos=pt, r=0.02, c='black')
+    sphere.name = "LeftClickMarker"
+
+    text_pos = pt + np.array([0.0, 0.0, 0.5])
+    label = vd.Text3D(
+        f"Initial guess:\n{vd.precision(pt, 2)}",
+        pos=text_pos,
+        s=0.04,
+        c='black',
+        justify='center'
+    )
+    label.name = "LeftClickLabel"
     label.lighting('off')
 
     plt.add(sphere, label)
@@ -212,7 +245,8 @@ fplt2d[1].vertices[:, 2] = 0
 
 plt.add_callback('mouse move', OnMouseMove)
 plt.add_callback('key press', OnKeyPress)
-plt.add_callback("right button press", OnMousePress)
+plt.add_callback("right button press", OnMouseRightPress)
+plt.add_callback("left button press", OnMouseLeftPress)
 plt.add_slider(OnSliderAlpha, 0., 1., 1., title="Alpha")
 
 plt.show([fplt3d, fplt2d], msg, __doc__, viewup='z')

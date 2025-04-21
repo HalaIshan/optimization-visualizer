@@ -144,12 +144,27 @@ I initially attempted to use add_button_radio() from vedo, but this method wasn�
 [▶ vedio1:](videos/task1.3_demo1.mkv)
 
 
-Task 2.1 – Gradient Descent Interaction
+Task 2.2 – Gradient Descent Interaction
+
+Task 2.1 –removing path
 In this task, the goal was to disable mouse-based path creation and prepare the environment for interactive gradient descent. Instead of deleting the existing path-related code, I introduced a global toggle variable enable_mouse_path and updated the OnMouseMove callback to respect it. By setting enable_mouse_path = False, the mouse still shows coordinates and updates text and flag visuals, but no longer appends to the path Xi. This approach preserves the infrastructure for plotting the optimization path later, as required for Task 2.2.
 
 [▶ Watch Task 2.1 Video:](videos/task2.1_demo.mkv)
 
-that what i did at task 2.1 at first but after i contiue i noticed that accidently i hidden the labels de and dx which should not happen so i redo it again but this time due to wanting to finish quickly i used another shorter and simplier way which is hidden the two lines of code that are responsible of creating the path as the mouse move 
+that what i did at task 2.1 at first but after i contiue and almost finished i missed the code up but wanted to use another simplier and quicker way to do this task which is hidden the two lines of code that are responsible of creating the path as the mouse move 
 
 [▶ Watch Task 2.1 Video:](videos/task2.1_demo2.mkv)
 
+again i didnt notice that i hidden the coordinations (x,y,z) and add them again and corrected it but as it apears for me usung the last version is better so i restored the code and continue working on it
+
+task 2.2 - Left Click – Set Initial Guess
+
+I added a new callback OnMouseLeftPress(evt) for left mouse clicks. When the user clicks on the surface or plane below it:
+The current path is cleared (Xi)
+Any previous initial guess marker and label are removed
+The clicked position is stored as the new initial guess (X0)
+A black marker and 3D label are shown at the selected point with the label
+
+In addition, pressing the ‘c’ key or switching the objective function via the GUI (keys 1, 2, or 3) also removes the initial guess marker and label
+
+[▶ Watch Task 2.2 Video:](videos/task2.2_demo.mkv)
