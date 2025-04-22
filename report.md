@@ -116,12 +116,11 @@ Allow the user to switch between different objective functions dynamically using
 ✅ Implementation Summary
 I extended the interactive system by allowing function switching using keyboard keys:
 
-Press 1 to view the Wavy Sine-Cosine function (default).
-![GUI Interaction](images/task_1.3_image1.png)
-Press 2 to view the Ripple Pattern.
-![GUI Interaction](images/task_1.3_image2.png)
-Press 3 to view the Gaussian Hill.
-![GUI Interaction](images/task_1.3_image3.png)
+![Press 1 to view the Wavy Sine-Cosine function (default).](images/task_1.3_image1.png)
+
+![Press 2 to view the Ripple Pattern.](images/task_1.3_image2.png)
+
+![Press 3 to view the Gaussian Hill.](images/task_1.3_image3.png)
 
 This interaction is handled in the OnKeyPress callback:
 When the user presses 1, 2, or 3, the global variable current_function is updated accordingly.
@@ -192,6 +191,48 @@ The user now activates gradient descent steps by pressing the key 'r' or 'R'. Th
 [▶ Watch Task 2.3 Video:](videos/task2.3_demo3.mkv)
 
 [▶ Watch Task 2.3 Video2- changed number and step sizes:](videos/task2.3_demo4.mkv)
+
+
+Step Size Experimentation (Task 2.3)
+Goal:
+Demonstrate how gradient descent behaves for different step sizes and identify an optimal value using the energy graph.
+Optimal Step Size Selected: 0.1
+After testing various step sizes, I found that:
+
+step_size = 0.1 gives:
+A stable and smooth convergence
+The energy graph shows a gradual decrease with no oscillations
+Reaches a good minimum within few steps
+
+![screenshot when step size = 0.1](images/task_2.3_image1.png)
+as it seems in the screenshot :
+Smooth convergence in the energy plot.
+Reaches the minimum in few steps.
+No instability or oscillations.
+Balanced and efficient.
+so this is the optimal step size.
+
+
+ i tested a lot of step sizes but two of them for comparison is :
+Step Size = 0.01
+![step_size = 0.01 ](images/task_2.3_image2.png)
+The energy plot shows very slow descent.
+Although it eventually decreases, it takes many iterations to make noticeable progress.
+dX and dE values are close to zero, meaning the algorithm is making tiny movements.
+Visually, the path looks like it’s crawling toward the minimum.
+⛔ Conclusion: Too small — stable but inefficient.
+
+
+
+Step Size = 0.15
+![step_size = 0.15 ](images/task_2.3_image3.png)
+Appears to converge, but:
+The path is less smooth.
+Slight numerical instability in dX values (e+55 scale).
+Energy curve drops quickly, but might overshoot in other cases.
+Riskier, especially with more complex surfaces.
+the more the step size is bigger it lead more to overshooting or unstable path
+
 
 
 
