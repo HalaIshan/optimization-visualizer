@@ -350,6 +350,24 @@ In this task, we aim to enhance the optimization system by comparing methods bas
 ✅ Line Search Implementation
 To improve convergence and stability, I implemented a Backtracking Line Search using the Armijo condition:
 
+
+def line_search(func, X, d, alpha=1.0):
+    """
+    Backtracking line search using Armijo condition.
+    """
+    rho = 0.5            # shrink factor
+    c = 1e-4             # Armijo parameter
+    f0 = func(X)
+    grad = gradient_fd(func, X)
+
+    while func(X + alpha * d) > f0 + c * alpha * np.dot(grad, d):
+        alpha *= rho
+        if alpha < 1e-8:  # safeguard
+            break
+
+    return alpha
+
+
 💡 Why Armijo Line Search?
 Using a fixed step size often leads to:
 Overshooting near steep gradients
@@ -368,4 +386,72 @@ The step size naturally shrank when approaching local minima
 
 
 i have not much time , i finished task 5 before so i will report them then continue with task 4.2 and 4.3 if had time left
+
+### Task 5: Numerical derivatives
+Task 5.1 – Analytical Gradient and Hessian
+In this task, I implemented analytical expressions for the gradient and Hessian of the objective functions, as an alternative to the slower numerical finite-difference method.
+
+While the numerical approach is generic and easy to apply, it is computationally expensive and less precise. Deriving and implementing the derivatives manually leads to significantly faster and more stable optimization.
+
+✅ Analytical Gradient Function
+python
+Copy
+Edit
+def analytical_gradient(X):
+    x, y = X[0], X[1]
+
+    if current_function == wavy_sine_cosine:
+        df_dx = 2 * y * np.cos(2 * x * y) * np.cos(3 * y) / 2
+        df_dy = (2 * x * np.cos(2 * x * y) * np.cos(3 * y) - 
+                 3 * np.sin(2 * x * y) * np.sin(3 * y)) / 2
+        return np.array([df_dx, df_dy])
+
+    elif current_function == ripple_pattern:
+        df_dx = -np.sin(x) * np.sin(y)
+        df_dy = np.cos(x) * np.cos(y)
+        return np.array([df_dx, df_dy])
+
+    elif current_function == gaussian_hill:
+        df_dx = -2 * x * np.exp(-x**2 - y**2)
+        df_dy = -2 * y * np.exp(-x**2 - y**2)
+        return np.array([df_dx, df_dy])
+✅ Analytical Hessian Function
+python
+Copy
+Edit
+def analytical_hessian(X):
+    x, y = X[0], X[1]
+
+    if current_function == wavy_sine_cosine:
+        d2f_dx2 = -4 * y**2 * np.sin(2 * x * y) * np.cos(3 * y) / 2
+        d2f_dy2 = (-4 * x**2 * np.sin(2 * x * y) * np.cos(3 * y) -
+                   9 * np.sin(2 * x * y) * np.cos(3 * y) -
+                   6 * x * np.cos(2 * x * y) * np.sin(3 * y)) / 2
+        d2f_dxdy = (2 * np.cos(2 * x * y) * np.cos(3 * y) -
+                    6 * y * np.sin(2 * x * y) * np.sin(3 * y)) / 2
+        return np.array([[d2f_dx2, d2f_dxdy],
+                         [d2f_dxdy, d2f_dy2]])
+
+    elif current_function == ripple_pattern:
+        d2f_dx2 = -np.cos(x) * np.sin(y)
+        d2f_dy2 = -np.cos(x) * np.sin(y)
+        d2f_dxdy = -np.sin(x) * np.cos(y)
+        return np.array([[d2f_dx2, d2f_dxdy],
+                         [d2f_dxdy, d2f_dy2]])
+
+    elif current_function == gaussian_hill:
+        e = np.exp(-x**2 - y**2)
+        d2f_dx2 = e * (4 * x**2 - 2)
+        d2f_dy2 = e * (4 * y**2 - 2)
+        d2f_dxdy = 4 * x * y * e
+        return np.array([[d2f_dx2, d2f_dxdy],
+                         [d2f_dxdy, d2f_dy2]])
+🧠 Insight
+These derivatives were obtained using symbolic differentiation of the formulas.
+
+Having analytical forms greatly improves the efficiency and accuracy of the optimization methods, particularly Newton’s method which depends on the Hessian matrix.
+
+This change sets the stage for advanced comparison tasks in Task 5.2, where performance is tested numerically.
+
+
 ---

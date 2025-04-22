@@ -332,6 +332,54 @@ def optimize(func, X, search_direction_function, tol=1e-6, iter_max=10):
             break
     return X
 
+def analytical_gradient(X):
+    x, y = X[0], X[1]
+
+    if current_function == wavy_sine_cosine:
+        df_dx = 2 * y * np.cos(2 * x * y) * np.cos(3 * y) / 2
+        df_dy = (2 * x * np.cos(2 * x * y) * np.cos(3 * y) - 
+                 3 * np.sin(2 * x * y) * np.sin(3 * y)) / 2
+        return np.array([df_dx, df_dy])
+
+    elif current_function == ripple_pattern:
+        df_dx = -np.sin(x) * np.sin(y)
+        df_dy = np.cos(x) * np.cos(y)
+        return np.array([df_dx, df_dy])
+
+    elif current_function == gaussian_hill:
+        df_dx = -2 * x * np.exp(-x**2 - y**2)
+        df_dy = -2 * y * np.exp(-x**2 - y**2)
+        return np.array([df_dx, df_dy])
+
+def analytical_hessian(X):
+    x, y = X[0], X[1]
+
+    if current_function == wavy_sine_cosine:
+        d2f_dx2 = -4 * y**2 * np.sin(2 * x * y) * np.cos(3 * y) / 2
+        d2f_dy2 = (-4 * x**2 * np.sin(2 * x * y) * np.cos(3 * y) -
+                   9 * np.sin(2 * x * y) * np.cos(3 * y) -
+                   6 * x * np.cos(2 * x * y) * np.sin(3 * y)) / 2
+        d2f_dxdy = (2 * np.cos(2 * x * y) * np.cos(3 * y) -
+                    6 * y * np.sin(2 * x * y) * np.sin(3 * y)) / 2
+        return np.array([[d2f_dx2, d2f_dxdy],
+                         [d2f_dxdy, d2f_dy2]])
+
+    elif current_function == ripple_pattern:
+        d2f_dx2 = -np.cos(x) * np.sin(y)
+        d2f_dy2 = -np.cos(x) * np.sin(y)
+        d2f_dxdy = -np.sin(x) * np.cos(y)
+        return np.array([[d2f_dx2, d2f_dxdy],
+                         [d2f_dxdy, d2f_dy2]])
+
+    elif current_function == gaussian_hill:
+        e = np.exp(-x**2 - y**2)
+        d2f_dx2 = e * (4 * x**2 - 2)
+        d2f_dy2 = e * (4 * y**2 - 2)
+        d2f_dxdy = 4 * x * y * e
+        return np.array([[d2f_dx2, d2f_dxdy],
+                         [d2f_dxdy, d2f_dy2]])
+
+
 
 #%% Plotting
 
