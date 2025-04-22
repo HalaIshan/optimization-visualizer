@@ -296,4 +296,53 @@ Clean comparison between methods
 [▶ Task 3.3 – Full Demo Video:](videos/task3.3_demo.mkv)
 
 
+Task 3.4 – Effect of Initial Point: Minimum vs. Saddle Point vs. Maximum
+🎯 Goal
+Investigate and compare how the behavior of optimization methods (Gradient Descent and Newton’s Method) changes based on where the initial guess is placed:
+*Near a minimum
+*Near a saddle point
+*Near a maximum
+
+🟢 Case 1 – Initial Point Near a Minimum
+📍 Initial Guess: (1.9, 2.5, 0.54)
+This point lies near a valley in the function landscape.
+![📸 Screenshot ](images/task_3.4_min.png)
+✅ Observation:
+Both methods smoothly converge toward the minimum.
+The energy values consistently decrease (black for GD, orange for Newton).
+The dot product (green) is small, indicating the search directions align well.
+
+
+🟡 Case 2 – Initial Point Near a Saddle Point
+📍 Initial Guess: (1.7, 2.3, 0.94)
+A saddle point is a flat region where one direction curves upward and the other curves downward.
+![📸 Screenshot  ](images/task_3.3_image1.png)
+
+⚠️ Observation:
+Gradient Descent still manages to decrease the energy.
+Newton’s method behaves differently: it may initially move in an unexpected direction due to the second-order nature of the Hessian.
+The energy curves decrease but show more curvature compared to the minimum case.
+
+
+🔴 Case 3 – Initial Point Near a Maximum
+📍 Initial Guess: (0.4, 0.58, 1.0)
+This point lies on a peak of the surface.
+![📸 Screenshot ](images/task_3.4_saddle.png)
+
+⛔ Observation:
+Gradient Descent behaves poorly, barely descending.
+Newton’s Method can attempt a steep move, but due to positive curvature (Hessian has positive eigenvalues), the update direction might not point toward a descent.
+The dot product spikes sharply, showing disagreement between gradient and Newton directions.
+
+
+🧠 Conclusion
+The starting point has a critical influence on convergence:
+
+Near minima: both methods perform well and predictably.
+Near saddle points: methods work but show slower or less consistent descent.
+Near maxima: both methods struggle, especially gradient descent.
+Newton’s method is more sensitive to curvature and can misbehave in poorly conditioned regions, especially without damping or line search.
+
+
+
 ---
