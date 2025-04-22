@@ -3,6 +3,7 @@ import vedo as vd
 import numpy as np
 from vedo.pyplot import plot
 from vedo import Latex
+import timeit
 
 import time
 
@@ -433,5 +434,28 @@ plt.add_slider(OnSliderAlpha,0.,1.,1., title="Alpha")         # add a slider for
 plt.add_slider(OnSliderStepSize, 0.01, 1.0, value=step_size, c='red', pos=2, title="Step Size")
 plt.add_slider(OnSliderNumSteps, 1, 50, value=num_steps,c='blue', pos=3, title="Num Steps")
 plt.show([fplt3d, fplt2d], msg, msg2, msg5, msg6, msg7, __doc__, viewup='z')
+
+point = np.array([0.6, 0.6])
+function_to_test = my_functions[0]  # testing on wavy_sine_cosine
+
+num_iterations = 10000
+
+# Time for numerical gradient
+t_numerical_grad = timeit.timeit(lambda: gradient_fd(function_to_test, point), number=num_iterations)
+print(f"Numerical Gradient Time: {t_numerical_grad:.5f} sec for {num_iterations} iterations")
+
+# Time for analytical gradient
+t_analytical_grad = timeit.timeit(lambda: analytical_gradient(point), number=num_iterations)
+print(f"Analytical Gradient Time: {t_analytical_grad:.5f} sec for {num_iterations} iterations")
+
+# Time for numerical Hessian
+t_numerical_hess = timeit.timeit(lambda: Hessian_fd(function_to_test, point), number=num_iterations)
+print(f"Numerical Hessian Time: {t_numerical_hess:.5f} sec for {num_iterations} iterations")
+
+# Time for analytical Hessian
+t_analytical_hess = timeit.timeit(lambda: analytical_hessian(point), number=num_iterations)
+print(f"Analytical Hessian Time: {t_analytical_hess:.5f} sec for {num_iterations} iterations")
+
+
 plt.close()
 # %%

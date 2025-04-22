@@ -453,5 +453,28 @@ Having analytical forms greatly improves the efficiency and accuracy of the opti
 
 This change sets the stage for advanced comparison tasks in Task 5.2, where performance is tested numerically.
 
+Task 5.1 – Comparing Analytical vs. Numerical Derivatives
+🎯 Goal:
+Measure and compare the execution time of numerical vs. analytical gradient and Hessian calculations.
+
+🧪 Method:
+
+Used Python’s timeit module to benchmark each method over 10,000 iterations.
+
+The comparison was based on the objective function: wavy_sine_cosine.
+
+The evaluation point used for all tests: [0.6, 0.6].
+
+⏱️ Timing Results:
+Method                    	Gradient (sec)    	Hessian (sec)
+Numerical (finite diff)	    0.17131            	0.42265
+Analytical (closed-form)  	0.11043           	0.27573
+
+📌 Conclusion:
+The analytical gradient and Hessian functions are significantly faster than their numerical counterparts.
+This makes them better suited for real-time optimization and repeated evaluations inside iterative algorithms like gradient descent or Newton's method.
+
+![📸 Visualization Screensho ](images/task_5.2_image2.png)
+![📸 Visualization Screensho ](images/task_5.2_image1.png)
 
 ---
