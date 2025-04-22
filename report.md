@@ -344,5 +344,28 @@ Near maxima: both methods struggle, especially gradient descent.
 Newton’s method is more sensitive to curvature and can misbehave in poorly conditioned regions, especially without damping or line search.
 
 
+Task 4: Evaluate Optimization Methods
+In this task, we aim to enhance the optimization system by comparing methods based on their convergence behavior and execution stability. A crucial step in this direction involves implementing a more adaptive step-size strategy rather than using a fixed step size.
 
+✅ Line Search Implementation
+To improve convergence and stability, I implemented a Backtracking Line Search using the Armijo condition:
+
+💡 Why Armijo Line Search?
+Using a fixed step size often leads to:
+Overshooting near steep gradients
+Slow convergence near minima
+Instability around saddle points or flat regions
+Instead, Armijo-based line search:
+Adjusts the step size dynamically
+Ensures sufficient decrease in function value at each step
+Provides better stability and convergence guarantees
+
+🧪 Experiment Summary
+I integrated this into the optimization flow and observed that:
+Gradient Descent became more stable across all test functions
+Convergence paths were smoother and less prone to oscillations
+The step size naturally shrank when approaching local minima
+
+
+i have not much time , i finished task 5 before so i will report them then continue with task 4.2 and 4.3 if had time left
 ---

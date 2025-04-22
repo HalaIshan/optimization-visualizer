@@ -291,9 +291,34 @@ def Newton(func, X):   # compute Newton step direction
     d = -np.linalg.solve(H, np.array(g))
     return d, np.array(g)  # return both search direction and gradient
 
-def line_search(func, X, d, alpha=1.0): 
-    # todo: implement line search
+
+def line_search(func, X, d, alpha=1.0):
+    """
+    Backtracking line search using Armijo condition.
+
+    Parameters:
+        func : objective function
+        X    : current point (numpy array)
+        d    : descent direction
+        alpha: initial step size (default = 1.0)
+        rho  : shrink factor (0 < rho < 1), typically 0.5
+        c    : Armijo condition constant (typically small, e.g., 1e-4)
+
+    Returns:
+        optimal alpha step size
+    """
+    rho = 0.5
+    c = 1e-4
+    f0 = func(X)
+    grad = gradient_fd(func, X)
+    
+    while func(X + alpha * d) > f0 + c * alpha * np.dot(grad, d):
+        alpha *= rho
+        if alpha < 1e-8:  # avoid infinite loop
+            break
+    
     return alpha
+
 
 def step(func, X, search_direction_function):
     d = search_direction_function(func, X)[0]
