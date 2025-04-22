@@ -457,5 +457,37 @@ t_analytical_hess = timeit.timeit(lambda: analytical_hessian(point), number=num_
 print(f"Analytical Hessian Time: {t_analytical_hess:.5f} sec for {num_iterations} iterations")
 
 
+# -------------------------------
+# Task 5.3 – Epsilon Sensitivity
+# -------------------------------
+
+# -------------------------------
+# Task 5.3 – Epsilon Sensitivity
+# -------------------------------
+print("\n--- Finite Difference Gradient vs Analytical Gradient ---")
+print(f"Testing Function: {current_function.__name__}\n")
+
+# Use multiple test points (but same current objective)
+test_cases = {
+    "Point A (0.6, 0.6)": np.array([0.6, 0.6]),
+    "Point B (1.2, -0.8)": np.array([1.2, -0.8]),
+    "Point C (0.0, 1.5)": np.array([0.0, 1.5])
+}
+
+epsilon_values = [0.1, 0.01, 0.001, 0.0001, 1e-5]
+
+for label, X0 in test_cases.items():
+    true_gradient = analytical_gradient(X0)
+    print(f"\n{label} | True Gradient: [{true_gradient[0]:.6f}, {true_gradient[1]:.6f}]")
+
+    for eps in epsilon_values:
+        finite_diff_gradient = gradient_fd(objective, X0, h=eps)
+
+        print(f"  Epsilon: {eps:.5f} | "
+              f"FD: [{finite_diff_gradient[0]:.6f}, {finite_diff_gradient[1]:.6f}] | "
+              f"Diff: [{finite_diff_gradient[0] - true_gradient[0]:.6f}, "
+              f"{finite_diff_gradient[1] - true_gradient[1]:.6f}]")
+
+
 plt.close()
 # %%

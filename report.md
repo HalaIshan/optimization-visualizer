@@ -477,4 +477,13 @@ This makes them better suited for real-time optimization and repeated evaluation
 ![📸 Visualization Screensho ](images/task_5.2_image2.png)
 ![📸 Visualization Screensho ](images/task_5.2_image1.png)
 
+
+📝 Task 5.3 – Gradient Comparison for Different Epsilon Values
+To test how the finite difference approximation depends on the epsilon value, I compared the gradient computed with gradient_fd to the true gradient from my analytical_gradient function. I tested five different epsilon values: 0.1, 0.01, 0.001, 0.0001, and 0.00001. The experiment was done on the current function wavy_sine_cosine, and I used three different points: (0.6, 0.6), (1.2, -0.8), and (0.0, 1.5).
+
+At large ε = 0.1, the finite difference gradient had a noticeable error compared to the true gradient. As ε got smaller, the results became more accurate. Starting from ε = 0.001, the values were almost exactly the same as the analytical ones. There was no instability at very small epsilon (like 0.00001), which means the function is numerically stable at those points.
+
+This shows that the choice of epsilon is important — too large causes approximation error, and too small may cause round-off problems (although not in this case). The most accurate and stable results were around ε = 0.001.
+
+![📸 my result ](images/task_5.3_image.png)
 ---
