@@ -187,6 +187,12 @@ After several failed attempts to resolve this behavior via:
 I decided to replace the button with a keyboard shortcut.
 
 
+🎯 Current Working Solution:
+The user now activates gradient descent steps by pressing the key 'r' or 'R'. This avoids the hover-trigger issue entirely and ensures predictable behavior.
+[▶ Watch Task 2.3 Video:](videos/task2.3_demo3.mkv)
+
+[▶ Watch Task 2.3 Video2- changed number and step sizes:](videos/task2.3_demo4.mkv)
+
 
 
 ---

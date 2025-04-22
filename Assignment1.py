@@ -24,6 +24,25 @@ current_function = wavy_sine_cosine  # default function
 def objective(X):
     return current_function(X)
 
+def run_gradient_descent_steps(widget=None, event=None):
+    global Xi, step_size, num_steps
+    if Xi.shape[0] == 0:
+        return
+    X = Xi[-1, :2]
+    for _ in range(num_steps):
+        d = gradient_descent(objective, X)
+        X = X + step_size * d
+        Z = objective(X)
+        Xi = np.append(Xi, [[X[0], X[1], Z]], axis=0)
+
+        # ✅ Add dark sphere at this point
+        sphere = vd.Sphere(pos=(X[0], X[1], Z), r=0.015, c='black')
+        sphere.name = "OptStepMarker"
+        plt.add(sphere)
+
+    update_energy_plot()
+    plt.render()
+
 #%% Callbacks
 msg = vd.Text2D(pos='bottom-left', font="VictorMono")
 global mouse_down, fplt3d, fplt2d, enable_mouse_path, energy_plot, Xi, step_size, num_steps
@@ -96,6 +115,8 @@ def OnKeyPress(evt):
     if evt.keypress == '3':
         current_function = gaussian_hill
         reset_surface_plot()
+    if evt.keypress in ['r', 'R']:
+        run_gradient_descent_steps()
 
 def reset_surface_plot():
     global fplt3d, fplt2d, Xi, energy_plot
@@ -252,24 +273,7 @@ def optimize(func, X, search_direction_function, tol=1e-6, iter_max=10):
             break
     return X
 
-def run_gradient_descent_steps(widget=None, event=None):
-    global Xi, step_size, num_steps
-    if Xi.shape[0] == 0:
-        return
-    X = Xi[-1, :2]
-    for _ in range(num_steps):
-        d = gradient_descent(objective, X)
-        X = X + step_size * d
-        Z = objective(X)
-        Xi = np.append(Xi, [[X[0], X[1], Z]], axis=0)
 
-        # ✅ Add dark sphere at this point
-        sphere = vd.Sphere(pos=(X[0], X[1], Z), r=0.015, c='black')
-        sphere.name = "OptStepMarker"
-        plt.add(sphere)
-
-    update_energy_plot()
-    plt.render()
 
 #%% Main Plotting
 Xi = np.empty((0, 3))
@@ -290,7 +294,6 @@ plt.add_callback("left button press", OnMouseLeftPress)
 plt.add_slider(OnSliderAlpha, 0., 1., 1.,pos=..., title="Alpha")
 plt.add_slider(set_step_size, 0.01, 1.0, value=step_size, c='red', pos=2, title="Step Size")
 plt.add_slider(set_num_steps, 1, 50, value=num_steps,c='blue', pos=3, title="Num Steps")
-plt.add_button( run_gradient_descent_steps,pos=(0.7, 0.05),size=20,states=["Run GD"])
 plt.show([fplt3d, fplt2d], msg, __doc__, viewup='z')
 plt.close()
 #%%
