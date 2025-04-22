@@ -4,8 +4,9 @@ import numpy as np
 from vedo.pyplot import plot
 from vedo import Latex
 import timeit
-
 import time
+import numpy.linalg as la
+
 
 
 vd.settings.default_backend= 'vtk'
@@ -272,7 +273,7 @@ def gradient_fd(func, X, h=0.001): # finite difference gradient
     x, y = X[0], X[1]
     gx = (func([x+h, y]) - func([x-h, y])) / (2*h)
     gy = (func([x, y+h]) - func([x, y-h])) / (2*h)
-    return gx, gy
+    return np.array([gx, gy])  # ✅ return as NumPy array
 
 def Hessian_fd(func, X, h=0.001): # finite difference Hessian
     x, y = X[0], X[1]
@@ -379,6 +380,68 @@ def analytical_hessian(X):
         d2f_dxdy = 4 * x * y * e
         return np.array([[d2f_dx2, d2f_dxdy],
                          [d2f_dxdy, d2f_dy2]])
+    
+
+def is_positive_definite(H):
+    # Check if matrix H is positive-definite by attempting Cholesky decomposition
+    try:
+        _ = np.linalg.cholesky(H)
+        return True
+    except np.linalg.LinAlgError:
+        return False
+
+
+def newton_vanilla(func, X):
+    g = gradient_fd(func, X)
+    H = Hessian_fd(func, X)
+    d = -np.linalg.solve(H, g)
+    return d
+
+
+def newton_with_identity_shift(func, X, mu=1e-3):
+    g = gradient_fd(func, X)
+    H = Hessian_fd(func, X)
+    I = np.eye(len(X))
+    while not is_positive_definite(H):
+        H += mu * I  # Add small shift to diagonal
+        mu *= 10     # Increase shift until positive definite
+    d = -np.linalg.solve(H, g)
+    return d
+
+
+def newton_descent_direction(func, X):
+    g = gradient_fd(func, X)
+    H = Hessian_fd(func, X)
+    try:
+        d = -np.linalg.solve(H, g)
+        if np.dot(d, g) >= 0:  # Not a descent direction
+            print("Warning: not a descent direction, falling back to -gradient")
+            d = -g
+    except np.linalg.LinAlgError:
+        d = -g  # Fallback if Hessian is singular
+    return d
+
+
+def compare_methods(func, X0, steps=20, alpha=0.1):
+    methods = {
+        "Gradient Descent": gradient_descent,
+        "Newton Vanilla": lambda f, x: newton_vanilla(f, x),
+        "Newton w/ Identity Shift": lambda f, x: newton_with_identity_shift(f, x),
+        "Newton Descent Direction": lambda f, x: newton_descent_direction(f, x)
+    }
+
+    for name, method in methods.items():
+        X = X0.copy()
+        path = [X.copy()]
+        for _ in range(steps):
+            d = method(func, X)
+            X = X + alpha * d
+            path.append(X.copy())
+        path = np.array(path)
+        print(f"{name} final point: {X}, final value: {func(X):.5f}")
+        # You can add plotting of paths if needed here
+
+
 
 
 
@@ -435,26 +498,26 @@ plt.add_slider(OnSliderStepSize, 0.01, 1.0, value=step_size, c='red', pos=2, tit
 plt.add_slider(OnSliderNumSteps, 1, 50, value=num_steps,c='blue', pos=3, title="Num Steps")
 plt.show([fplt3d, fplt2d], msg, msg2, msg5, msg6, msg7, __doc__, viewup='z')
 
-point = np.array([0.6, 0.6])
-function_to_test = my_functions[0]  # testing on wavy_sine_cosine
+#point = np.array([0.6, 0.6])
+#function_to_test = my_functions[0]  # testing on wavy_sine_cosine
 
-num_iterations = 10000
+#num_iterations = 10000
 
 # Time for numerical gradient
-t_numerical_grad = timeit.timeit(lambda: gradient_fd(function_to_test, point), number=num_iterations)
-print(f"Numerical Gradient Time: {t_numerical_grad:.5f} sec for {num_iterations} iterations")
+#t_numerical_grad = timeit.timeit(lambda: gradient_fd(function_to_test, point), number=num_iterations)
+#print(f"Numerical Gradient Time: {t_numerical_grad:.5f} sec for {num_iterations} iterations")
 
 # Time for analytical gradient
-t_analytical_grad = timeit.timeit(lambda: analytical_gradient(point), number=num_iterations)
-print(f"Analytical Gradient Time: {t_analytical_grad:.5f} sec for {num_iterations} iterations")
+#t_analytical_grad = timeit.timeit(lambda: analytical_gradient(point), number=num_iterations)
+#print(f"Analytical Gradient Time: {t_analytical_grad:.5f} sec for {num_iterations} iterations")
 
 # Time for numerical Hessian
-t_numerical_hess = timeit.timeit(lambda: Hessian_fd(function_to_test, point), number=num_iterations)
-print(f"Numerical Hessian Time: {t_numerical_hess:.5f} sec for {num_iterations} iterations")
+#t_numerical_hess = timeit.timeit(lambda: Hessian_fd(function_to_test, point), number=num_iterations)
+#print(f"Numerical Hessian Time: {t_numerical_hess:.5f} sec for {num_iterations} iterations")
 
 # Time for analytical Hessian
-t_analytical_hess = timeit.timeit(lambda: analytical_hessian(point), number=num_iterations)
-print(f"Analytical Hessian Time: {t_analytical_hess:.5f} sec for {num_iterations} iterations")
+#t_analytical_hess = timeit.timeit(lambda: analytical_hessian(point), number=num_iterations)
+#print(f"Analytical Hessian Time: {t_analytical_hess:.5f} sec for {num_iterations} iterations")
 
 
 # -------------------------------
@@ -464,29 +527,44 @@ print(f"Analytical Hessian Time: {t_analytical_hess:.5f} sec for {num_iterations
 # -------------------------------
 # Task 5.3 – Epsilon Sensitivity
 # -------------------------------
-print("\n--- Finite Difference Gradient vs Analytical Gradient ---")
-print(f"Testing Function: {current_function.__name__}\n")
+#print("\n--- Finite Difference Gradient vs Analytical Gradient ---")
+#print(f"Testing Function: {current_function.__name__}\n")
 
 # Use multiple test points (but same current objective)
-test_cases = {
-    "Point A (0.6, 0.6)": np.array([0.6, 0.6]),
-    "Point B (1.2, -0.8)": np.array([1.2, -0.8]),
-    "Point C (0.0, 1.5)": np.array([0.0, 1.5])
-}
+#test_cases = {
+#    "Point A (0.6, 0.6)": np.array([0.6, 0.6]),
+#    "Point B (1.2, -0.8)": np.array([1.2, -0.8]),
+#    "Point C (0.0, 1.5)": np.array([0.0, 1.5])
+#}
 
-epsilon_values = [0.1, 0.01, 0.001, 0.0001, 1e-5]
+#epsilon_values = [0.1, 0.01, 0.001, 0.0001, 1e-5]
 
-for label, X0 in test_cases.items():
-    true_gradient = analytical_gradient(X0)
-    print(f"\n{label} | True Gradient: [{true_gradient[0]:.6f}, {true_gradient[1]:.6f}]")
+#for label, X0 in test_cases.items():
+#    true_gradient = analytical_gradient(X0)
+#    print(f"\n{label} | True Gradient: [{true_gradient[0]:.6f}, {true_gradient[1]:.6f}]")
 
-    for eps in epsilon_values:
-        finite_diff_gradient = gradient_fd(objective, X0, h=eps)
+#    for eps in epsilon_values:
+#        finite_diff_gradient = gradient_fd(objective, X0, h=eps)
 
-        print(f"  Epsilon: {eps:.5f} | "
-              f"FD: [{finite_diff_gradient[0]:.6f}, {finite_diff_gradient[1]:.6f}] | "
-              f"Diff: [{finite_diff_gradient[0] - true_gradient[0]:.6f}, "
-              f"{finite_diff_gradient[1] - true_gradient[1]:.6f}]")
+#        print(f"  Epsilon: {eps:.5f} | "
+#              f"FD: [{finite_diff_gradient[0]:.6f}, {finite_diff_gradient[1]:.6f}] | "
+#              f"Diff: [{finite_diff_gradient[0] - true_gradient[0]:.6f}, "
+#              f"{finite_diff_gradient[1] - true_gradient[1]:.6f}]")
+
+print("\n--- Task 4.2 - Gradient Descent vs Newton's Method ---")
+
+# Example usage:
+initial_points = [
+    np.array([0.6, 0.6]),
+    np.array([1.9, 0.94]),
+    np.array([0.4, 0.58]),
+    np.array([2.5, 2.5])
+]
+
+for i, pt in enumerate(initial_points):
+    print(f"\n--- Initialization {i+1}: Starting at {pt} ---")
+    compare_methods(wavy_sine_cosine, pt)
+
 
 
 plt.close()

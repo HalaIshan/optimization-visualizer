@@ -387,6 +387,60 @@ The step size naturally shrank when approaching local minima
 
 i have not much time , i finished task 5 before so i will report them then continue with task 4.2 and 4.3 if had time left
 
+Task 4.2 – Comparison of Gradient Descent and Newton's Method Variants
+
+🎯 Goal:
+To compare gradient descent with three variants of Newton's method:
+Vanilla Newton's method
+Newton with identity shift (ensures Hessian is positive-definite)
+Newton with descent direction check (fallback to gradient direction if needed)
+
+🧪 Method:
+For each method:
+Start from multiple initialization points
+Run a fixed number of optimization steps (20)
+Use a fixed step size (alpha=0.1)
+Record the final point and objective function value
+Output warnings if descent direction fallback is triggered
+
+📍 Test Function:
+wavy_sine_cosine(x, y) = sin(2xy) * cos(3y)/2 + 0.5
+
+🧬 Initial Points Tested:
+[0.6, 0.6]
+[1.9, 0.94]
+[0.4, 0.58]
+[2.5, 2.5]
+
+✅ Observations:
+Gradient Descent was slow but consistent.
+Vanilla Newton performed well when the Hessian was well-behaved, but failed otherwise.
+Identity Shift Newton improved stability but sometimes converged to suboptimal points.
+Descent Direction Newton was most robust and always maintained descent direction, falling back to -gradient when needed.
+
+⚠️ Sample Warnings:
+Warning: not a descent direction, falling back to -gradient
+This occurred when the Newton step was not a descent direction, indicating non-positive-definite Hessian.
+
+📊 Sample Result Summary:
+Initialization: [0.6, 0.6]
+  Gradient Descent: Final value = 0.00000
+  Newton Vanilla:   Final value = 0.49095
+  Newton Identity:  Final value = 0.92201
+  Newton Descent:   Final value = 0.00185
+
+Initialization: [1.9, 0.94]
+  Gradient Descent: Final value = 0.10452
+  Newton Vanilla:   Final value = 0.99976
+  Newton Identity:  Final value = 0.60055
+  Newton Descent:   Final value = 0.00293
+
+![📸 Visualization Screenshot ](images/task_4.2_image1.png)
+
+
+
+
+
 ### Task 5: Numerical derivatives
 Task 5.1 – Analytical Gradient and Hessian
 In this task, I implemented analytical expressions for the gradient and Hessian of the objective functions, as an alternative to the slower numerical finite-difference method.
@@ -474,8 +528,8 @@ Analytical (closed-form)  	0.11043           	0.27573
 The analytical gradient and Hessian functions are significantly faster than their numerical counterparts.
 This makes them better suited for real-time optimization and repeated evaluations inside iterative algorithms like gradient descent or Newton's method.
 
-![📸 Visualization Screensho ](images/task_5.2_image2.png)
-![📸 Visualization Screensho ](images/task_5.2_image1.png)
+![📸 Visualization Screenshot ](images/task_5.2_image2.png)
+![📸 Visualization Screenshot ](images/task_5.2_image1.png)
 
 
 📝 Task 5.3 – Gradient Comparison for Different Epsilon Values
@@ -486,4 +540,9 @@ At large ε = 0.1, the finite difference gradient had a noticeable error compare
 This shows that the choice of epsilon is important — too large causes approximation error, and too small may cause round-off problems (although not in this case). The most accurate and stable results were around ε = 0.001.
 
 ![📸 my result ](images/task_5.3_image.png)
+
+
+
+
+
 ---
