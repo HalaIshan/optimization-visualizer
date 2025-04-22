@@ -24,28 +24,12 @@ current_function = wavy_sine_cosine  # default function
 def objective(X):
     return current_function(X)
 
-def run_gradient_descent_steps(widget=None, event=None):
-    global Xi, step_size, num_steps
-    if Xi.shape[0] == 0:
-        return
-    X = Xi[-1, :2]
-    for _ in range(num_steps):
-        d = gradient_descent(objective, X)
-        X = X + step_size * d
-        Z = objective(X)
-        Xi = np.append(Xi, [[X[0], X[1], Z]], axis=0)
 
-        # ✅ Add dark sphere at this point
-        sphere = vd.Sphere(pos=(X[0], X[1], Z), r=0.015, c='black')
-        sphere.name = "OptStepMarker"
-        plt.add(sphere)
-
-    update_energy_plot()
-    plt.render()
+    
 
 #%% Callbacks
 msg = vd.Text2D(pos='bottom-left', font="VictorMono")
-global mouse_down, fplt3d, fplt2d, enable_mouse_path, energy_plot, Xi, step_size, num_steps
+global mouse_down, fplt3d, fplt2d, enable_mouse_path, energy_plot, Xi, step_size, num_steps, Xi_newton, X0
 mouse_down = False
 enable_mouse_path = False
 X0 = None  # initial guess from left-click
@@ -65,7 +49,7 @@ def OnMouseMove(evt):
     if not mouse_down and enable_mouse_path:
         Xi = np.append(Xi, [X], axis=0)
 
-    if Xi.shape[0] > 1:
+    if Xi.shape[0] > 1 and enable_mouse_path:
         txt = (
             f"X:  {vd.precision(X,2)}\n"
             f"dX: {vd.precision(Xi[-1,0:2] - Xi[-2,0:2],2)}\n"
@@ -90,6 +74,9 @@ def OnMouseMove(evt):
     update_energy_plot()
     plt.render()
 
+# Declare early so no warning
+def run_both_optimizations(): pass
+
 def OnKeyPress(evt):
     global Xi, energy_plot, current_function
 
@@ -101,6 +88,7 @@ def OnKeyPress(evt):
         plt.remove("LeftClickMarker")
         plt.remove("LeftClickLabel")
         plt.remove("OptStepMarker")
+        plt.remove("NewtonStepMarker")
         if energy_plot:
             plt.remove(energy_plot)
             energy_plot = None
@@ -116,7 +104,7 @@ def OnKeyPress(evt):
         current_function = gaussian_hill
         reset_surface_plot()
     if evt.keypress in ['r', 'R']:
-        run_gradient_descent_steps()
+        run_both_optimizations()
 
 def reset_surface_plot():
     global fplt3d, fplt2d, Xi, energy_plot
@@ -189,6 +177,7 @@ def OnMouseLeftPress(evt):
     plt.remove("LeftClickMarker")
     plt.remove("LeftClickLabel")
     plt.remove("OptStepMarker")
+    plt.remove("NewtonStepMarker")
 
     pt = np.array(pt)
 
@@ -209,6 +198,7 @@ def OnMouseLeftPress(evt):
     plt.add(sphere, label)
     # ✅ Clear old path + graph
     Xi = np.empty((0, 3))
+    Xi_newton = np.empty((0, 3))  # Clear Newton path when user selects new point
     if energy_plot:
         plt.remove(energy_plot)
         energy_plot = None
@@ -274,6 +264,46 @@ def optimize(func, X, search_direction_function, tol=1e-6, iter_max=10):
     return X
 
 
+def run_both_optimizations():
+    global Xi, Xi_newton, step_size, num_steps
+    if Xi.shape[0] == 0:
+        return
+
+    # Starting point
+    X_start = Xi[0, :2]
+
+    # ---- Gradient Descent ----
+    Xi = np.empty((0, 3))
+    X = X_start.copy()
+    for _ in range(num_steps):
+        d = gradient_descent(objective, X)
+        if np.isnan(d).any() or np.isinf(d).any(): break
+        X = X + step_size * d
+        Z = objective(X)
+        if not np.isfinite(Z): break
+        Xi = np.append(Xi, [[X[0], X[1], Z]], axis=0)
+        sphere = vd.Sphere(pos=(X[0], X[1], Z), r=0.015, c='black')
+        sphere.name = "OptStepMarker"
+        plt.add(sphere)
+
+    # ---- Newton's Method ----
+    Xi_newton = np.empty((0, 3))
+    Xn = X_start.copy()
+    for _ in range(num_steps):
+        d = Newton(objective, Xn)
+        if np.isnan(d).any() or np.isinf(d).any(): break
+        Xn = Xn + d
+        Zn = objective(Xn)
+        if not np.isfinite(Zn): break
+        Xi_newton = np.append(Xi_newton, [[Xn[0], Xn[1], Zn]], axis=0)
+        sphere_n = vd.Sphere(pos=(Xn[0], Xn[1], Zn), r=0.015, c='orange5 ')
+        sphere_n.name = "NewtonStepMarker"
+        plt.add(sphere_n)
+        print(f"[Newton] Step {_}: X={Xn}, d={d}, Zn={Zn}")
+
+
+    update_energy_plot()
+    plt.render()
 
 #%% Main Plotting
 Xi = np.empty((0, 3))
@@ -296,4 +326,5 @@ plt.add_slider(set_step_size, 0.01, 1.0, value=step_size, c='red', pos=2, title=
 plt.add_slider(set_num_steps, 1, 50, value=num_steps,c='blue', pos=3, title="Num Steps")
 plt.show([fplt3d, fplt2d], msg, __doc__, viewup='z')
 plt.close()
+
 #%%

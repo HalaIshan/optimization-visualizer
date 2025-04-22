@@ -35,6 +35,7 @@ Below is a screenshot showing the path, floating flag, and transparency slider:
 ![GUI Interaction](images/before_task_image1.png)
 
 
+### Task 1: Understand the code
 
 # Task 1.1 – Right Mouse Click Callback
 
@@ -48,7 +49,6 @@ I created a function called `OnMousePress(evt)` that is triggered when the user 
 
 This callback is registered using:
 
-```python
 plt.add_callback("right button press", OnMousePress)
 
 ## 📸 Screenshot
@@ -142,7 +142,7 @@ I initially attempted to use add_button_radio() from vedo, but this method wasn�
 [▶ vedio1:](videos/task1.3_demo1.mkv)
 
 
-Task 2.2 – Gradient Descent Interaction
+### Task 2: Gradient Descent
 
 Task 2.1 –removing path
 In this task, the goal was to disable mouse-based path creation and prepare the environment for interactive gradient descent. Instead of deleting the existing path-related code, I introduced a global toggle variable enable_mouse_path and updated the OnMouseMove callback to respect it. By setting enable_mouse_path = False, the mouse still shows coordinates and updates text and flag visuals, but no longer appends to the path Xi. This approach preserves the infrastructure for plotting the optimization path later, as required for Task 2.2.
@@ -233,6 +233,16 @@ Energy curve drops quickly, but might overshoot in other cases.
 Riskier, especially with more complex surfaces.
 the more the step size is bigger it lead more to overshooting or unstable path
 
+
+
+### Task 3: Newton's Method
+Task 3.1: Comparing Newton's Method and Gradient Descent
+In this task, I modified the code to simultaneously track two optimization paths:
+One for Gradient Descent (black dots).
+One for Newton's Method (orange dots).
+
+Pressing the ‘r’ key now runs both methods from the same initial point and displays their paths on the 3D surface.
+![screenshot ](images/task_3.1_image1.png)
 
 
 
