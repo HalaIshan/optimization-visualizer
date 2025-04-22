@@ -244,6 +244,56 @@ One for Newton's Method (orange dots).
 Pressing the ‘r’ key now runs both methods from the same initial point and displays their paths on the 3D surface.
 ![screenshot ](images/task_3.1_image1.png)
 
+Task 3.2: Energy Comparison Between Gradient Descent and Newton’s Method
+In this task, I extended the 2D energy plot (top-left corner) to display both the gradient descent and Newton’s method paths. The purpose is to compare the energy values (i.e., objective function outputs) along each method’s optimization trajectory.
+🔧 Implementation Details:
+I modified the update_energy_plot() function to check the length of both Xi (gradient descent path) and Xi_newton (Newton's path). (later refactor the name to Yi)
+For each path, I computed the energy at every step and plotted it 
+To ensure the plots were compatible, I used like=plot_gd when generating the Newton plot, matching the y-axis scaling.
+
+The Newton energy curve was plotted in orange, and the gradient descent curve in black.
+![screenshot ](images/task_3.2_image1.png)
+
+note:after i finish this task i forget to do push to github.
+
+Task 3.3 – Plot Energies and Dot Products in a Unified Graph
+🎯 Goal
+Extend the energy plot to display not only the energy values for both optimization methods (Gradient Descent and Newton), but also include the dot product between the Newton direction and gradient vector at each iteration. This gives deeper insight into the optimization behavior.
+
+❌ Initial Struggles
+This task turned out to be the most challenging part of the assignment for me. I faced major debugging issues when trying to add the dot product values to the plot. Specifically:
+The graph sometimes failed to update.
+It threw shape errors when plotting the third curve.
+Occasionally, the rendering of the plot crashed or showed nothing.
+Dot products plotted at the wrong axis range or caused y-scaling mismatches.
+I spent several hours trying to understand the issue, including:
+Verifying the array shapes manually
+Trying multiple plotting orders
+Re-cloning the figure in different orders
+Switching between different names and variables
+
+⚠️ Eventually, I realized the underlying problem was related to plot object compatibility and incorrect figure referencing across multiple updates. After trying multiple minor fixes, I finally gave up and decided to rebuild the plotting logic from scratch.
+
+🔁 Full Code Rewrite
+I rewrote the entire energy plotting section and related function:
+Re-created a new function from scratch, named update_2d_graph()
+Used three separate plot() calls and linked them using like=...
+Carefully synchronized x-axis indexes across:
+Gradient Descent energy values (black)
+Newton energy values (orange)
+Dot products (green)
+Used .clone2d() to create a clean overlay that always stays on screen
+Updated the global state cleanup (pressing ‘c’ or changing function) to reset all three plots
+
+✅ Final Result
+After this overhaul, the energy + dot product graph works smoothly. It shows:
+Gradual energy drop for both methods
+How the dot product evolves during optimization
+Clean comparison between methods
+
+![📸 Screenshot – All curves plotted correctly: ](images/task_3.3_image1.png)
+
+[▶ Task 3.3 – Full Demo Video:](videos/task3.3_demo.mkv)
 
 
 ---

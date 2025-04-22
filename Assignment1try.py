@@ -4,7 +4,11 @@ import numpy as np
 from vedo.pyplot import plot
 from vedo import Latex
 
-vd.settings.default_backend = 'vtk'
+import time
+
+
+vd.settings.default_backend= 'vtk'
+plt = vd.Plotter(bg2='lightblue')  # 💥 Move this UP here
 
 #%% Function Selection
 def wavy_sine_cosine(X):
@@ -20,99 +24,36 @@ def gaussian_hill(X):
     return np.exp(-x**2 - y**2)
 
 current_function = wavy_sine_cosine  # default function
+my_functions = [wavy_sine_cosine, ripple_pattern, gaussian_hill]
+
 
 def objective(X):
     return current_function(X)
 
+def change_objective(new_index):
+    global current_function_index, current_function, fplt3d, fplt2d, Xi, Yi, dot_products, fplt2d_clone , fplt2d2
 
-    
+    current_function_index = new_index
+    current_function = my_functions[new_index]
 
-#%% Callbacks
-msg = vd.Text2D(pos='bottom-left', font="VictorMono")
-global mouse_down, fplt3d, fplt2d, enable_mouse_path, energy_plot, Xi, step_size, num_steps, Xi_newton, X0
-mouse_down = False
-enable_mouse_path = False
-X0 = None  # initial guess from left-click
-num_steps = 5  # default number of steps per click
-step_size = 0.1  # default step size
-
-def OnMouseMove(evt):
-    global Xi, mouse_down, energy_plot, fplt3d
-
-    if evt.object is None:
-        return
-    
-    pt = evt.picked3d
-    if pt is None:
-         return  # prevents crash when hovering/clicking on empty space
-    X = np.array([pt[0], pt[1], objective([pt[0], pt[1]])])
-    if not mouse_down and enable_mouse_path:
-        Xi = np.append(Xi, [X], axis=0)
-
-    if Xi.shape[0] > 1 and enable_mouse_path:
-        txt = (
-            f"X:  {vd.precision(X,2)}\n"
-            f"dX: {vd.precision(Xi[-1,0:2] - Xi[-2,0:2],2)}\n"
-            f"dE: {vd.precision(Xi[-1,2] - Xi[-2,2],2)}\n"
-        )
-        ar = vd.Arrow(Xi[-2,:], Xi[-1,:], s=0.001, c='orange5')
-        plt.add(ar)
-    else:
-        txt = f"X: {vd.precision(X,2)}"
-    msg.text(txt)
-
-    if Xi.shape[0] > 0:
-        c = vd.Cylinder([np.append(Xi[-1,0:2], 0.0), Xi[-1,:]], r=0.01, c='orange5')
-        plt.remove("Cylinder")
-        plt.add(c)
-
-    fp = fplt3d[0].flagpole(txt, point=X, s=0.08, c='k', font="Quikhand")
-    fp.follow_camera()
-    plt.remove("FlagPole")
-
-    plt.add(fp)
-    update_energy_plot()
-    plt.render()
-
-# Declare early so no warning
-def run_both_optimizations(): pass
-
-def OnKeyPress(evt):
-    global Xi, energy_plot, current_function
-
-    if evt.keypress in ['c', 'C','1','2','3']:
-        Xi = np.empty((0, 3))
-        plt.remove("Arrow")
-        plt.remove("RightClickMarker")
-        plt.remove("RightClickLabel")
-        plt.remove("LeftClickMarker")
-        plt.remove("LeftClickLabel")
-        plt.remove("OptStepMarker")
-        plt.remove("NewtonStepMarker")
-        if energy_plot:
-            plt.remove(energy_plot)
-            energy_plot = None
-        plt.render()
-
-    if evt.keypress == '1':
-        current_function = wavy_sine_cosine
-        reset_surface_plot()
-    if evt.keypress == '2':
-        current_function = ripple_pattern
-        reset_surface_plot()
-    if evt.keypress == '3':
-        current_function = gaussian_hill
-        reset_surface_plot()
-    if evt.keypress in ['r', 'R']:
-        run_both_optimizations()
-
-def reset_surface_plot():
-    global fplt3d, fplt2d, Xi, energy_plot
-
+    # Clear all markers/paths
     Xi = np.empty((0, 3))
-    if energy_plot:
-        plt.remove(energy_plot)
-        energy_plot = None
+    Yi = np.empty((0, 3))
+    dot_products = []
+    if fplt2d_clone:
+        plt.remove(fplt2d_clone)
+        fplt2d_clone = None
+
+    plt.remove("Arrow")
+    plt.remove("Point")
+    plt.remove("LeftClickMarker")
+    plt.remove("RightClickMarker")
+    plt.remove("LeftClickLabel")
+    plt.remove("RightClickLabel")
+    plt.remove("OptStepMarker")
+    plt.remove("NewtonStepMarker")
+
+    # Remove and regenerate plots
     plt.remove(fplt3d)
     plt.remove(fplt2d)
 
@@ -121,26 +62,127 @@ def reset_surface_plot():
     fplt2d[0].lighting('off')
     fplt2d[0].vertices[:, 2] = 0
     fplt2d[1].vertices[:, 2] = 0
-    plt.add(fplt3d, fplt2d)
+
+    plt.add(fplt3d)
+    plt.add(fplt2d)
+
     plt.render()
 
-def OnSliderAlpha(widget, event):
-    global fplt3d
-    val = widget.value
-    fplt3d[0].alpha(val)
-    fplt3d[1].alpha(val)
+#%% Callbacks
+msg = vd.Text2D(pos='bottom-left', font="VictorMono") # an empty text
+msg2 = vd.Text2D(pos='top-left', font="VictorMono") # an empty text
 
-def set_step_size(widget, event):
-    global step_size
-    step_size = widget.value
+msg5=vd.Text2D("Black: GD Energy", pos=(0.3, 0.84), c='black', font="VictorMono", s=0.8)
+msg6=vd.Text2D("Orange: Newton Energy", pos=(0.3, 0.92), c='orange', font="VictorMono", s=0.8)
+msg7=vd.Text2D("Green: Dot Product", pos=(0.3, 0.88), c='green', font="VictorMono", s=0.8)
+current_function_index = 0  # initialize the current function index
 
-def set_num_steps(widget, event):
+
+def OnMouseMove(evt):                ### called every time mouse moves!
+    global Xi, fplt3d, isDrawing, objective, msg, plt, fplt2d_clone, fplt2d2 , fplt2d, fplt3d, msg2
+
+    if evt.object is None:          # mouse hits nothing, return
+        return
+
+    pt  = evt.picked3d               # 3d coords of point under mouse
+    
+    X   = np.array([pt[0],pt[1],objective([pt[0],pt[1]])])  # X = (x,y,e(x,y))
+    #if isDrawing:                                 # only add points if in path drawing mode
+    #    Xi = np.append(Xi,[X],axis=0)             # append to the list of points
+    #    visualize_path()                          # visualize path with the new point                  
+    if len(Xi) > 1 and isDrawing:                  # need at least two points to compute a distance
+        txt =(
+            f"X:  {vd.precision(X,2)}"
+           # f"dX: {vd.precision(Xi[-1,0:2] - Xi[-2,0:2],2)}\n"
+           # f"dE: {vd.precision(Xi[-1,2] - Xi[-2,2],2)}\n"
+        )
+    #    ar = vd.Arrow(Xi[-2,:], Xi[-1,:], s=0.001, c='orange5')
+    #    plt.add(ar) # add the arrow
+    else:
+        txt = f"X: {vd.precision(X,2)}"
+    msg.text(txt)                    # update text message
+
+    #c = vd.Cylinder([np.append(Xi[-1,0:2], 0.0), Xi[-1,:]], r=0.01, c='orange5')
+    #plt.remove("Cylinder")    
+    fp = fplt3d[0].flagpole(txt, point=X,s=0.08, c='k', font="Quikhand")
+    fp.follow_camera()                 # make it always face the camera
+    plt.remove("FlagPole") # remove the old flagpole
+
+    #plt.add(fp, c) # add the new flagpole and new cylinder
+    plt.add(fp) # add the new flagpole
+    plt.render()   # re-render the scene
+
+dot_products = []  # initialize a list to store dot products
+
+def run_both_optimizations():
+    global Xi, Yi, dot_products , objective, gradient_descent, Newton, step_size, num_steps, msg2
+    for _ in range(num_steps):
+            if len(Xi) == 0 or len(Yi) == 0: 
+                msg2.text("Initial guess is not set!")  # display error message
+            else:
+                msg2.text("")    # clear error message    
+                X = Xi[-1, 0:2]  # get the last point as the starting point
+                y = Yi[-1, 0:2] 
+                d = gradient_descent(objective, X)        # compute the gradient descent step
+                n, g_newton = Newton(objective, X)        # compute the Newton step and get the gradient
+                dot_products.append(np.dot(g_newton, n))  # compute dot product
+                Xi = np.vstack((Xi, np.append(X + d * step_size, objective(X + d * step_size))))  # append new point to Xi 
+                Yi = np.vstack((Yi, np.append(y + Newton(objective, y)[0] * step_size, objective(y + Newton(objective, y)[0] * step_size)))) # append new point to Yi
+
+                ar = vd.Arrow(Xi[-2,:], Xi[-1,:], s=0.001, c='orange5')
+                ar2 = vd.Arrow(Yi[-2,:], Yi[-1,:], s=0.001, c='blue5')
+                plt.add(ar) # add the arrow
+                plt.add(ar2)
+
+    update_2d_graph()
+    plt.render()      # re-render  
+
+
+
+def OnKeyPress(evt):               ### called every time a key is pressed
+    global plt, objective, gradient_descent, Newton, update_2d_graph, fplt2d_clone, fplt2d2, Xi, Yi, dot_products, fplt3d, fplt2d, msg2
+    if evt.keypress in ['c', 'C', '1', '2', '3']: # reset Xi and the arrows
+        Xi = np.empty((0, 3))
+        Yi = np.empty((0, 3))
+        dot_products = []
+        plt.remove("Arrow").render()
+        plt.remove("Point").render()      # remove the old initial_guess
+        plt.remove(fplt2d_clone).render() # remove the old clone plot
+
+    if evt.keypress in ['1', '2', '3']:
+        change_objective(int(evt.keypress) - 1)
+
+
+    if evt.keypress in ['r', 'R']:        # run gradient descent
+        run_both_optimizations()
+
+    plt.render()  # re-render the plotter
+        
+
+def OnSliderAlpha(widget, event): ### called every time the slider is moved
+    val = widget.value         # get the slider value
+    fplt3d[0].alpha(val)       # set the alpha (transparency) value of the surface
+    fplt3d[1].alpha(val)       # set the alpha (transparency) value of the isolines
+
+
+num_steps = 10   # default number of steps
+step_size = 0.1  # default step size
+
+def OnSliderNumSteps(widget, event):
     global num_steps
-    num_steps = int(widget.value)
+    num_steps = int(widget.value)  # update the number of steps based on slider value
 
-def OnMouseRightPress(evt):
-    global mouse_down, Xi
-    mouse_down = True
+def OnSliderStepSize(widget, event):
+    global step_size
+    step_size = widget.value       # update the step size based on slider value
+
+
+isDrawing = True               # global variable to track the path drawing mode
+
+def OnRightMousePress(evt):
+    global isDrawing, Xi, Yi, dot_products, fplt2d_clone , fplt2d2, fplt3d, fplt2d
+    if evt.object is None:
+        return
 
     pt = evt.picked3d
     if pt is None:
@@ -148,9 +190,11 @@ def OnMouseRightPress(evt):
 
     pt = np.array(pt)
 
+    # Create a red sphere at the clicked location
     sphere = vd.Sphere(pos=pt, r=0.02, c='red')
     sphere.name = "RightClickMarker"
 
+    # Create a label slightly above the sphere
     text_pos = pt + np.array([0.0, 0.0, 0.5])
     label = vd.Text3D(
         f"{vd.precision(pt, 2)}",
@@ -164,26 +208,37 @@ def OnMouseRightPress(evt):
 
     plt.add(sphere, label)
     plt.render()
-    mouse_down = False
 
-def OnMouseLeftPress(evt):
-    global mouse_down, Xi, energy_plot, X0
-    mouse_down = True
+
+def OnLeftMousePress(evt):
+    global Xi, Yi, dot_products, fplt2d_clone, fplt2d2, fplt3d, fplt2d
+
+    if evt.object is None:
+        return
 
     pt = evt.picked3d
     if pt is None:
         return
 
+    pt = np.array(pt)
+
+    # Remove old markers and arrows
     plt.remove("LeftClickMarker")
     plt.remove("LeftClickLabel")
+    plt.remove("Arrow")
     plt.remove("OptStepMarker")
     plt.remove("NewtonStepMarker")
 
-    pt = np.array(pt)
+    # Remove old plot if exists
+    if fplt2d_clone:
+        plt.remove(fplt2d_clone)
+        fplt2d_clone = None
 
+    # Add black sphere marker
     sphere = vd.Sphere(pos=pt, r=0.02, c='black')
     sphere.name = "LeftClickMarker"
 
+    # Add label with initial guess
     text_pos = pt + np.array([0.0, 0.0, 0.5])
     label = vd.Text3D(
         f"Initial guess:\n{vd.precision(pt, 2)}",
@@ -196,41 +251,29 @@ def OnMouseLeftPress(evt):
     label.lighting('off')
 
     plt.add(sphere, label)
-    # ✅ Clear old path + graph
+
+    # Clear old optimization paths and dot products
     Xi = np.empty((0, 3))
-    Xi_newton = np.empty((0, 3))  # Clear Newton path when user selects new point
-    if energy_plot:
-        plt.remove(energy_plot)
-        energy_plot = None
-    X0 = pt[:2]  # save initial guess for optimization
-    Xi = np.append(Xi, [[pt[0], pt[1], objective(pt[:2])]], axis=0)
+    Yi = np.empty((0, 3))
+    dot_products = []
+
+    # Save new starting point for both paths
+    value = objective(pt[:2])
+    Xi = np.append(Xi, [[pt[0], pt[1], value]], axis=0)
+    Yi = np.append(Yi, [[pt[0], pt[1], value]], axis=0)
+
     plt.render()
-    mouse_down = False
 
-def update_energy_plot():
-    global energy_plot, plt, Xi
 
-    if Xi.shape[0] < 2:
-        return
-
-    steps = np.arange(len(Xi))
-    energies = Xi[:, 2]
-
-    if energy_plot:
-        plt.remove(energy_plot)
-
-    new_plot = plot(steps, energies, lc='blue', title='Energy along path')
-    energy_plot = new_plot.clone2d(pos='top-left', size=0.8)
-    plt.add(energy_plot)
-
+  
 #%% Optimization functions
-def gradient_fd(func, X, h=0.001):
+def gradient_fd(func, X, h=0.001): # finite difference gradient
     x, y = X[0], X[1]
     gx = (func([x+h, y]) - func([x-h, y])) / (2*h)
     gy = (func([x, y+h]) - func([x, y-h])) / (2*h)
     return gx, gy
 
-def Hessian_fd(func, X, h=0.001):
+def Hessian_fd(func, X, h=0.001): # finite difference Hessian
     x, y = X[0], X[1]
     gxx = (func([x+h, y]) - 2*func([x, y]) + func([x-h, y])) / h**2
     gyy = (func([x, y+h]) - 2*func([x, y]) + func([x, y-h])) / h**2
@@ -238,23 +281,24 @@ def Hessian_fd(func, X, h=0.001):
     H = np.array([[gxx, gxy], [gxy, gyy]])
     return H
 
-def gradient_descent(func, X):
+def gradient_descent(func, X): # compute gradient step direction
     g = gradient_fd(func, X)
     return -np.array(g)
 
-def Newton(func, X):
+def Newton(func, X):   # compute Newton step direction
     g = gradient_fd(func, X)
     H = Hessian_fd(func, X)
     d = -np.linalg.solve(H, np.array(g))
-    return np.array([d[0], d[1]])
+    return d, np.array(g)  # return both search direction and gradient
 
-def line_search(func, X, d, alpha=1.0):
+def line_search(func, X, d, alpha=1.0): 
+    # todo: implement line search
     return alpha
 
 def step(func, X, search_direction_function):
-    d = search_direction_function(func, X)
+    d = search_direction_function(func, X)[0]
     alpha = line_search(func, X, d)
-    return X + d * alpha
+    return X + d*alpha
 
 def optimize(func, X, search_direction_function, tol=1e-6, iter_max=10):
     for i in range(iter_max):
@@ -264,67 +308,57 @@ def optimize(func, X, search_direction_function, tol=1e-6, iter_max=10):
     return X
 
 
-def run_both_optimizations():
-    global Xi, Xi_newton, step_size, num_steps
-    if Xi.shape[0] == 0:
-        return
+#%% Plotting
 
-    # Starting point
-    X_start = Xi[0, :2]
-
-    # ---- Gradient Descent ----
-    Xi = np.empty((0, 3))
-    X = X_start.copy()
-    for _ in range(num_steps):
-        d = gradient_descent(objective, X)
-        if np.isnan(d).any() or np.isinf(d).any(): break
-        X = X + step_size * d
-        Z = objective(X)
-        if not np.isfinite(Z): break
-        Xi = np.append(Xi, [[X[0], X[1], Z]], axis=0)
-        sphere = vd.Sphere(pos=(X[0], X[1], Z), r=0.015, c='black')
-        sphere.name = "OptStepMarker"
-        plt.add(sphere)
-
-    # ---- Newton's Method ----
-    Xi_newton = np.empty((0, 3))
-    Xn = X_start.copy()
-    for _ in range(num_steps):
-        d = Newton(objective, Xn)
-        if np.isnan(d).any() or np.isinf(d).any(): break
-        Xn = Xn + d
-        Zn = objective(Xn)
-        if not np.isfinite(Zn): break
-        Xi_newton = np.append(Xi_newton, [[Xn[0], Xn[1], Zn]], axis=0)
-        sphere_n = vd.Sphere(pos=(Xn[0], Xn[1], Zn), r=0.015, c='orange5 ')
-        sphere_n.name = "NewtonStepMarker"
-        plt.add(sphere_n)
-        print(f"[Newton] Step {_}: X={Xn}, d={d}, Zn={Zn}")
-
-
-    update_energy_plot()
-    plt.render()
-
-#%% Main Plotting
 Xi = np.empty((0, 3))
-energy_plot = None
+Yi = np.empty((0, 3))
+# test the optimization functions
 X = optimize(objective, [0.6, 0.6], Newton, tol=1e-6, iter_max=100)
 
-plt = vd.Plotter(bg2='lightblue', size=(1600, 900))
-fplt3d = plot(lambda x, y: objective([x, y]), c='terrain')
-fplt2d = fplt3d.clone()
-fplt2d[0].lighting('off')
-fplt2d[0].vertices[:, 2] = 0
-fplt2d[1].vertices[:, 2] = 0
+plt = vd.Plotter(bg2='lightblue')  # Create the plotter
+fplt3d = plot(lambda x,y: objective([x,y]), c='terrain')      # create a plot from the function e. fplt3d is a list containing surface mesh, isolines, and axis
+fplt2d = fplt3d.clone()            # clone the plot to create a 2D plot
 
-plt.add_callback('mouse move', OnMouseMove)
-plt.add_callback('key press', OnKeyPress)
-plt.add_callback("right button press", OnMouseRightPress)
-plt.add_callback("left button press", OnMouseLeftPress)
-plt.add_slider(OnSliderAlpha, 0., 1., 1.,pos=..., title="Alpha")
-plt.add_slider(set_step_size, 0.01, 1.0, value=step_size, c='red', pos=2, title="Step Size")
-plt.add_slider(set_num_steps, 1, 50, value=num_steps,c='blue', pos=3, title="Num Steps")
-plt.show([fplt3d, fplt2d], msg, __doc__, viewup='z')
+
+fplt2d[0].lighting('off')          # turn off lighting for the 2D plot
+fplt2d[0].vertices[:,2] = 0        # set the z-coordinate of the mesh to 0
+fplt2d[1].vertices[:,2] = 0        # set the z-coordinate of the isolines to 0
+
+fplt2d_clone = None
+fplt2d2 = None
+
+def update_2d_graph():
+    global fplt2d_clone, fplt2d2, dot_products, Xi, Yi, fplt3d, fplt2d, msg2
+    if len(Xi) > 1 and len(Yi) > 1:
+        x_values = range(1, len(Xi) + 1)    # indexes of GD path points
+        z_values = Xi[:, 2]                 # the function values for GD path points
+        
+        x_values_Yi = range(1, len(Yi) + 1) # indexes of Newton path points
+        z_values_Yi = Yi[:, 2]              # the function values for Newton path points 
+
+        dp_x_values = range(1, len(dot_products) + 1) # indexes of dot products points
+        
+        fplt2d2 = plot(x_values, z_values, c='orange5', lw=2, title="Function Values on Path/ Dot product") # create a new 2D plot for GD path
+        fplt2d2 += plot(x_values_Yi, z_values_Yi, c='blue5', lw=2, like=fplt2d2)               # add the plot for Newton path to the existing one
+        fplt2d2 += plot(dp_x_values, dot_products, c='green5', lw=2, like=fplt2d2)             # add the plot for dot products to the existing one
+
+        if fplt2d_clone is not None:
+            plt.remove(fplt2d_clone)
+        
+        fplt2d_clone = fplt2d2.clone2d(pos='top-left', size=0.8)   # clone the plot to maintain the appearance
+
+        plt.add(fplt2d_clone)  # add the plot to the plotter
+
+
+
+
+plt.add_callback('mouse move', OnMouseMove) # add Mouse move callback
+plt.add_callback('key press', OnKeyPress)   # add Keyboard callback
+plt.add_callback('RightButtonPressEvent', OnRightMousePress)  # add Mouse press callback
+plt.add_callback('LeftButtonPressEvent', OnLeftMousePress)    # add Mouse press callback
+plt.add_slider(OnSliderAlpha,0.,1.,1., title="Alpha")         # add a slider for the alpha value of the surface
+plt.add_slider(OnSliderStepSize, 0.01, 1.0, value=step_size, c='red', pos=2, title="Step Size")
+plt.add_slider(OnSliderNumSteps, 1, 50, value=num_steps,c='blue', pos=3, title="Num Steps")
+plt.show([fplt3d, fplt2d], msg, msg2, msg5, msg6, msg7, __doc__, viewup='z')
 plt.close()
-
-#%%
+# %%
