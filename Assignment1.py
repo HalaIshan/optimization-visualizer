@@ -442,6 +442,45 @@ def compare_methods(func, X0, steps=20, alpha=0.1):
         # You can add plotting of paths if needed here
 
 
+def optimize_until_convergence(func, X0, method_func, grad_func=gradient_fd,
+                               tol=1e-5, max_iter=1000, alpha=0.1, verbose=True):
+    """
+    Run optimization until convergence based on gradient norm.
+
+    Parameters:
+        func       : objective function
+        X0         : initial point
+        method_func: optimization method (e.g., gradient_descent, newton_descent_direction)
+        grad_func  : gradient function (analytical or numerical)
+        tol        : tolerance for gradient norm
+        max_iter   : maximum number of iterations
+        alpha      : step size
+        verbose    : whether to print progress
+
+    Returns:
+        X_final    : the final optimized point
+        history    : list of all X values during optimization
+    """
+    X = X0.copy()
+    history = [X.copy()]
+    
+    for i in range(max_iter):
+        d = method_func(func, X)
+        grad_norm = np.linalg.norm(grad_func(func, X))
+
+        if grad_norm < tol:
+            if verbose:
+                print(f"✅ Converged at iteration {i}, grad norm: {grad_norm:.2e}")
+            break
+
+        X = X + alpha * d
+        history.append(X.copy())
+
+    else:
+        if verbose:
+            print(f"⚠️ Did not converge within {max_iter} iterations. Final grad norm: {grad_norm:.2e}")
+
+    return X, history
 
 
 
@@ -551,21 +590,45 @@ plt.show([fplt3d, fplt2d], msg, msg2, msg5, msg6, msg7, __doc__, viewup='z')
 #              f"Diff: [{finite_diff_gradient[0] - true_gradient[0]:.6f}, "
 #              f"{finite_diff_gradient[1] - true_gradient[1]:.6f}]")
 
-print("\n--- Task 4.2 - Gradient Descent vs Newton's Method ---")
+#print("\n--- Task 4.2 - Gradient Descent vs Newton's Method ---")
 
 # Example usage:
-initial_points = [
-    np.array([0.6, 0.6]),
-    np.array([1.9, 0.94]),
-    np.array([0.4, 0.58]),
-    np.array([2.5, 2.5])
-]
+#initial_points = [
+#    np.array([0.6, 0.6]),
+#    np.array([1.9, 0.94]),
+#    np.array([0.4, 0.58]),
+#    np.array([2.5, 2.5])
+#]
 
-for i, pt in enumerate(initial_points):
-    print(f"\n--- Initialization {i+1}: Starting at {pt} ---")
-    compare_methods(wavy_sine_cosine, pt)
+#for i, pt in enumerate(initial_points):
+#    print(f"\n--- Initialization {i+1}: Starting at {pt} ---")
+#    compare_methods(wavy_sine_cosine, pt)
 
+print("\n--- Task 4.3 - Automatic Stopping Criterion ---")
+X0 = np.array([0.6, 0.6])
+final_point, path = optimize_until_convergence(
+    wavy_sine_cosine,
+    X0,
+    method_func=newton_descent_direction,  # or gradient_descent
+    tol=1e-5,
+    max_iter=200,
+    alpha=0.1
+)
+print("Final Point:", final_point)
+print("Total Iterations:", len(path)-1)
 
+print("\n--- Task 4.3 – Automatic Stopping Criterion (Example 2) ---")
+X1 = np.array([1.5, -1.0])  # Different initial point
+final_point_2, path_2 = optimize_until_convergence(
+    wavy_sine_cosine,
+    X1,
+    method_func=newton_descent_direction,  # or gradient_descent
+    tol=1e-5,
+    max_iter=500,
+    alpha=0.1
+)
+print("Final Point:", final_point_2)
+print("Total Iterations:", len(path_2)-1)
 
 plt.close()
 # %%

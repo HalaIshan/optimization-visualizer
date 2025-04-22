@@ -438,7 +438,28 @@ Initialization: [1.9, 0.94]
 ![📸 Visualization Screenshot ](images/task_4.2_image1.png)
 
 
+### Task 4.3 – Automatic Stopping Criterion for Optimization
+To determine how many iterations are needed to reach a local minimum, we implemented an automatic stopping condition based on the norm of the gradient.
+The optimization stops when:
+The gradient norm falls below a threshold tol = 1e-5, indicating proximity to a critical point (a minimum).
+Or a maximum number of iterations (max_iter = 500) is reached, to prevent infinite loops.
+This approach offers an adaptive and more robust convergence check than a fixed step count.
 
+✅ Result: Example 1
+Initial Point: [0.6, 0.6]
+Converged at iteration 112,
+Final Point: [0.74999998, 1.04719598]
+Gradient Norm: 9.23e-06
+Status: ✅ Successfully converged
+
+✅ Result: Example 2
+Initial Point: [2.4, -0.9]
+Converged at iteration 114,
+Final Point: [2.24999407, -1.04719898]
+Gradient Norm: 9.47e-06
+Status: ✅ Successfully converged
+
+![📸 Visualization Screenshot ](images/task_4.3_image1.png)
 
 
 ### Task 5: Numerical derivatives
