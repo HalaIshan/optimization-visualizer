@@ -26,17 +26,22 @@ def objective(X):
 
 #%% Callbacks
 msg = vd.Text2D(pos='bottom-left', font="VictorMono")
-global mouse_down, fplt3d, fplt2d, enable_mouse_path
+global mouse_down, fplt3d, fplt2d, enable_mouse_path, energy_plot, Xi, step_size, num_steps
 mouse_down = False
 enable_mouse_path = False
+X0 = None  # initial guess from left-click
+num_steps = 5  # default number of steps per click
+step_size = 0.1  # default step size
 
 def OnMouseMove(evt):
     global Xi, mouse_down, energy_plot, fplt3d
 
     if evt.object is None:
         return
-
+    
     pt = evt.picked3d
+    if pt is None:
+         return  # prevents crash when hovering/clicking on empty space
     X = np.array([pt[0], pt[1], objective([pt[0], pt[1]])])
     if not mouse_down and enable_mouse_path:
         Xi = np.append(Xi, [X], axis=0)
@@ -76,6 +81,7 @@ def OnKeyPress(evt):
         plt.remove("RightClickLabel")
         plt.remove("LeftClickMarker")
         plt.remove("LeftClickLabel")
+        plt.remove("OptStepMarker")
         if energy_plot:
             plt.remove(energy_plot)
             energy_plot = None
@@ -115,8 +121,16 @@ def OnSliderAlpha(widget, event):
     fplt3d[0].alpha(val)
     fplt3d[1].alpha(val)
 
+def set_step_size(widget, event):
+    global step_size
+    step_size = widget.value
+
+def set_num_steps(widget, event):
+    global num_steps
+    num_steps = int(widget.value)
+
 def OnMouseRightPress(evt):
-    global mouse_down
+    global mouse_down, Xi
     mouse_down = True
 
     pt = evt.picked3d
@@ -143,17 +157,17 @@ def OnMouseRightPress(evt):
     plt.render()
     mouse_down = False
 
-
 def OnMouseLeftPress(evt):
-    global mouse_down
+    global mouse_down, Xi, energy_plot, X0
     mouse_down = True
 
     pt = evt.picked3d
     if pt is None:
         return
-    
+
     plt.remove("LeftClickMarker")
     plt.remove("LeftClickLabel")
+    plt.remove("OptStepMarker")
 
     pt = np.array(pt)
 
@@ -172,6 +186,13 @@ def OnMouseLeftPress(evt):
     label.lighting('off')
 
     plt.add(sphere, label)
+    # ✅ Clear old path + graph
+    Xi = np.empty((0, 3))
+    if energy_plot:
+        plt.remove(energy_plot)
+        energy_plot = None
+    X0 = pt[:2]  # save initial guess for optimization
+    Xi = np.append(Xi, [[pt[0], pt[1], objective(pt[:2])]], axis=0)
     plt.render()
     mouse_down = False
 
@@ -231,6 +252,25 @@ def optimize(func, X, search_direction_function, tol=1e-6, iter_max=10):
             break
     return X
 
+def run_gradient_descent_steps(widget=None, event=None):
+    global Xi, step_size, num_steps
+    if Xi.shape[0] == 0:
+        return
+    X = Xi[-1, :2]
+    for _ in range(num_steps):
+        d = gradient_descent(objective, X)
+        X = X + step_size * d
+        Z = objective(X)
+        Xi = np.append(Xi, [[X[0], X[1], Z]], axis=0)
+
+        # ✅ Add dark sphere at this point
+        sphere = vd.Sphere(pos=(X[0], X[1], Z), r=0.015, c='black')
+        sphere.name = "OptStepMarker"
+        plt.add(sphere)
+
+    update_energy_plot()
+    plt.render()
+
 #%% Main Plotting
 Xi = np.empty((0, 3))
 energy_plot = None
@@ -247,8 +287,10 @@ plt.add_callback('mouse move', OnMouseMove)
 plt.add_callback('key press', OnKeyPress)
 plt.add_callback("right button press", OnMouseRightPress)
 plt.add_callback("left button press", OnMouseLeftPress)
-plt.add_slider(OnSliderAlpha, 0., 1., 1., title="Alpha")
-
+plt.add_slider(OnSliderAlpha, 0., 1., 1.,pos=..., title="Alpha")
+plt.add_slider(set_step_size, 0.01, 1.0, value=step_size, c='red', pos=2, title="Step Size")
+plt.add_slider(set_num_steps, 1, 50, value=num_steps,c='blue', pos=3, title="Num Steps")
+plt.add_button( run_gradient_descent_steps,pos=(0.7, 0.05),size=20,states=["Run GD"])
 plt.show([fplt3d, fplt2d], msg, __doc__, viewup='z')
 plt.close()
-# %%
+#%%

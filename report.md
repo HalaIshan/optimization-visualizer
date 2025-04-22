@@ -35,7 +35,6 @@ Below is a screenshot showing the path, floating flag, and transparency slider:
 ![GUI Interaction](images/before_task_image1.png)
 
 
----
 
 # Task 1.1 – Right Mouse Click Callback
 
@@ -66,7 +65,7 @@ note : when i press c i delete all the point and their labels
 [▶ Click to watch the Task 1.1 demo2 - press 'c' to clear](videos/task1.1_vedio2.mkv)
 
 
----
+
 Task 1.2 – Visualizing Function Values on the Path
 🎯 Goal
 Display the energy values along the path traced by the mouse (Xi) as a live-updating graph, using vedo.plot.
@@ -108,7 +107,7 @@ Below is the improved result using clone2d():
 
 [▶ Or embed a video if needed:](videos/task1.2_demo.mkv)
 
----
+
 
 Task 1.3 – Changing the Objective Function via the GUI
 🎯 Goal
@@ -168,3 +167,26 @@ A black marker and 3D label are shown at the selected point with the label
 In addition, pressing the ‘c’ key or switching the objective function via the GUI (keys 1, 2, or 3) also removes the initial guess marker and label
 
 [▶ Watch Task 2.2 Video:](videos/task2.2_demo.mkv)
+
+
+
+Task 2.3:
+Implement a GUI that allows the user to trigger a fixed number of gradient descent steps (Task 2.3) using a button labeled “Run GD”.
+
+[▶ Watch Task 2.3 Video:](videos/task2.3_demo.mkv)
+
+[▶ Watch Task 2.3 Video2- changed num os steps:](videos/task2.3_demo2.mkv)
+
+
+⚠️ Problem Encountered:
+Despite wrapping the logic in an on_button_press() function and checking for event.action == "press", the button still triggered on mouse hover, or even immediately upon rendering, rather than waiting for a user click.
+After several failed attempts to resolve this behavior via:
+*Removing states
+*Wrapping the button handler
+*Inspecting event.action
+I decided to replace the button with a keyboard shortcut.
+
+
+
+
+---
