@@ -1,7 +1,6 @@
 # Report for Assignment 1
 
 **Name:** Hala Ishan  
-**Student ID:** 213692296
 
 # GUI Exploration – Before Starting Tasks
 
